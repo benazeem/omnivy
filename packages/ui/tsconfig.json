@@ -1,11 +1,12 @@
 {
-  "extends": "@obsidianplus/tsconfig/tsconfig.base.json",
+  "extends": "@omnivy/tsconfig/tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
     "composite": true,
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
-      "@obsidian/ui": ["."]
+      "@omnivy/ui": ["."]
     }
   },
   "include": ["components", "index.ts", "**/*.ts" , "**/*.tsx", "../../tailwind.config.ts"]

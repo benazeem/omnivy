@@ -1,56 +1,56 @@
- import type { Folder } from "@/types";
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { loadObsidianState } from "./index";
+import type { Folder } from '@/types'
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import { loadObsidianState } from './index'
 
 interface ObsidianState {
-  connected: boolean;
-  folders: Folder[];
-  vaultRoots: string[];
+  connected: boolean
+  folders: Folder[]
+  vaultNames: string[]
 }
 
 const initialState: ObsidianState = {
   connected: false,
   folders: [],
-  vaultRoots: [],
-};
+  vaultNames: [],
+}
 
 const obsidianSlice = createSlice({
-  name: "obsidianVault",
+  name: 'obsidianVault',
   initialState,
   reducers: {
     setObsidianConnected(state, action: PayloadAction<boolean>) {
-      state.connected = action.payload;
+      state.connected = action.payload
     },
     setObsidianFolders(state, action: PayloadAction<Folder[]>) {
-      state.folders = action.payload;
+      state.folders = action.payload
     },
-    addObsidianVaultRoot(state, action: PayloadAction<string>) {
-      const vaultRoot = action.payload;
+    addObsidianVaultName(state, action: PayloadAction<string>) {
+      const vaultName = action.payload
       if (
-        state.vaultRoots.length === 0 ||
-        !state.vaultRoots.includes(vaultRoot)
+        state.vaultNames.length === 0 ||
+        !state.vaultNames.includes(vaultName)
       ) {
-        state.vaultRoots.push(vaultRoot);
+        state.vaultNames.push(vaultName)
       }
     },
-    removeObsidianVaultRoot(state, action: PayloadAction<string>) {
-      const vaultRoot = action.payload;
-      state.vaultRoots = state.vaultRoots.filter((root) => root !== vaultRoot);
+    removeObsidianVaultName(state, action: PayloadAction<string>) {
+      const vaultName = action.payload
+      state.vaultNames = state.vaultNames.filter((name) => name !== vaultName)
     },
   },
   extraReducers: (builder) => {
     builder.addCase(loadObsidianState.fulfilled, (state, action) => {
-      state.connected = action.payload.connected;
-      state.folders = action.payload.folders;
-      state.vaultRoots = action.payload.vaultRoots;
-    });
+      state.connected = action.payload.connected
+      state.folders = action.payload.folders
+      state.vaultNames = action.payload.vaultNames || []
+    })
   },
-});
+})
 
 export const {
   setObsidianConnected,
   setObsidianFolders,
-  addObsidianVaultRoot,
-  removeObsidianVaultRoot,
-} = obsidianSlice.actions;
-export default obsidianSlice.reducer;
+  addObsidianVaultName,
+  removeObsidianVaultName,
+} = obsidianSlice.actions
+export default obsidianSlice.reducer

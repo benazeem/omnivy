@@ -1,0 +1,140 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // Used for unpooled direct connections during migrations
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String               @id @default(uuid())
+  name          String?
+  email         String               @unique
+  emailVerified DateTime?            @map("email_verified")
+  image         String?
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+  deletedAt     DateTime?            @map("deleted_at") // Soft-delete support
+  extensionTokenVersion Int          @default(0) @map("extension_token_version")
+
+  // Relations
+  accounts            OAuthAccount[]
+  sessions            UserSession[]
+  providerConnections ProviderConnection[]
+  clips               Clip[]
+  auditLogs           AuditLog[]
+  providerDestinations ProviderDestination[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+model OAuthAccount {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  provider          String   // e.g., "google", "github"
+  providerAccountId String   @map("provider_account_id")
+  type              String   // e.g., "oauth"
+  createdAt         DateTime @default(now()) @map("created_at")
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("oauth_accounts")
+}
+
+model ProviderConnection {
+  id             String          @id @default(uuid())
+  userId         String          @map("user_id")
+  provider       String          // e.g., "gdrive", "onedrive", "dropbox", "notion"
+  status         String          @default("active") // "active", "expired", "revoked"
+  scopes         String[]        // Minimized permission scopes list
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  
+  // Relations
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  encryptedToken EncryptedToken?
+
+  @@unique([userId, provider])
+  @@map("provider_connections")
+}
+
+model EncryptedToken {
+  id                    String             @id @default(uuid())
+  connectionId          String             @unique @map("connection_id")
+  encryptedAccessToken  String             @map("encrypted_access_token")
+  encryptedRefreshToken String?            @map("encrypted_refresh_token")
+  iv                    String             // Initialization vector (IV) for AES-256-GCM
+  tag                   String             // Integrity confirmation GCM auth tag
+  expiresAt             DateTime?          @map("expires_at")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  
+  connection            ProviderConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@map("encrypted_tokens")
+}
+
+model Clip {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  content   String   @db.Text
+  url       String?
+  tags      String[]
+  metadata  Json?    // Holds sync markers, remote document IDs, or vault destinations
+  status    String   @default("pending") // "pending", "synced", "failed"
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("clips")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  action    String   // e.g., "oauth_connect", "clip_save", "token_refresh"
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model ProviderDestination {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  provider     String   // "notion", "gdrive", etc.
+  resourceId   String   @map("resource_id") // e.g. Notion page/db ID
+  resourceType String   @map("resource_type") // e.g. "notion_page", "notion_database"
+  name         String
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider, resourceId])
+  @@map("provider_destinations")
+}

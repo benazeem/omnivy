@@ -1,5 +1,5 @@
 {
-  "name": "obsidianplus",
+  "name": "omnivy",
   "private": true,
   "packageManager": "pnpm@9.0.0",
   "scripts": {
@@ -11,7 +11,6 @@
   },
   "workspaces": [
     "apps/web",
-    "apps/host",
     "apps/extension"
   ],
   "devDependencies": {

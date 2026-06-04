@@ -1,20 +1,121 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@obsidianplus/ui/styles/output.css";
 
+@theme {
+  /* Link Tailwind brand colors to our dynamic CSS variables */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
 
-@custom-variant dark (&:is(.dark *));
-
-::-webkit-scrollbar {
-  width: 1px;
-  height: 1px;
+  --font-sans: var(--global-font, "Inter", ui-sans-serif, system-ui, sans-serif);
+  --font-display: "Outfit", var(--font-sans);
 }
 
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 1px;
+/* 1. Global Defaults (Indigo) */
+:root {
+  --global-font: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --spacing-multiplier: 1;
+  --spacing: calc(0.25rem * var(--spacing-multiplier));
+  
+  --brand-50: #f5f3ff; --brand-100: #ede9fe; --brand-200: #ddd6fe; --brand-300: #c4b5fd; --brand-400: #a78bfa;
+  --brand-500: #8b5cf6; --brand-600: #7c3aed; --brand-700: #6d28d9; --brand-800: #5b21b6; --brand-900: #4c1d95;
+  --accent: var(--brand-600);
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+/* 2. Theme Overrides (Colors only) */
+:root.dark {
+  --bg-popover: #0f172a; --bg-muted: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8; --border-dim: #334155;
+  --accent: var(--brand-400);
 }
+
+:root.amoled {
+  --bg-popover: #000000; --bg-muted: #0a0a0a; --text-main: #ffffff; --text-muted: #a3a3a3; --border-dim: #262626;
+  --accent: var(--brand-500);
+}
+
+:root.light {
+  --bg-popover: #ffffff; --bg-muted: #f8fafc; --text-main: #0f172a; --text-muted: #64748b; --border-dim: #e2e8f0;
+  --accent: var(--brand-600);
+}
+
+/* 3. Accent Overrides (Palette only) */
+[data-accent="violet"] {
+  --brand-50: #faf5ff; --brand-100: #f3e8ff; --brand-200: #e9d5ff; --brand-300: #d8b4fe; --brand-400: #c084fc;
+  --brand-500: #a855f7; --brand-600: #9333ea; --brand-700: #7e22ce; --brand-800: #6b21a8; --brand-900: #581c87;
+}
+[data-accent="rose"] {
+  --brand-50: #fff1f2; --brand-100: #ffe4e6; --brand-200: #fecdd3; --brand-300: #fda4af; --brand-400: #fb7185;
+  --brand-500: #f43f5e; --brand-600: #e11d48; --brand-700: #be123c; --brand-800: #9f1239; --brand-900: #881337;
+}
+[data-accent="emerald"] {
+  --brand-50: #ecfdf5; --brand-100: #d1fae5; --brand-200: #a7f3d0; --brand-300: #6ee7b7; --brand-400: #34d399;
+  --brand-500: #10b981; --brand-600: #059669; --brand-700: #047857; --brand-800: #065f46; --brand-900: #064e3b;
+}
+[data-accent="amber"] {
+  --brand-50: #fffbeb; --brand-100: #fef3c7; --brand-200: #fde68a; --brand-300: #fcd34d; --brand-400: #fbbf24;
+  --brand-500: #f59e0b; --brand-600: #d97706; --brand-700: #b45309; --brand-800: #92400e; --brand-900: #78350f;
+}
+[data-accent="cyan"] {
+  --brand-50: #ecfeff; --brand-100: #cffafe; --brand-200: #a5f3fc; --brand-300: #67e8f9; --brand-400: #22d3ee;
+  --brand-500: #06b6d4; --brand-600: #0891b2; --brand-700: #0e7490; --brand-800: #155e75; --brand-900: #164e63;
+}
+[data-accent="orange"] {
+  --brand-50: #fff7ed; --brand-100: #ffedd5; --brand-200: #fed7aa; --brand-300: #fdba74; --brand-400: #fb923c;
+  --brand-500: #f97316; --brand-600: #ea580c; --brand-700: #c2410c; --brand-800: #9a3412; --brand-900: #7c2d12;
+}
+
+/* 4. Density Overrides */
+[data-density="compact"] { --spacing-multiplier: 0.7; }
+[data-density="spacious"] { --spacing-multiplier: 1.3; }
+
+/* 5. Typography Overrides */
+:root.font-serif { --global-font: Georgia, serif; }
+:root.font-mono { --global-font: ui-monospace, monospace; }
+:root.text-sm { font-size: 0.875rem; }
+:root.text-lg { font-size: 1.125rem; }
+:root.text-xl { font-size: 1.25rem; }
+
+/* Global Styling */
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--bg-popover);
+  color: var(--text-main);
+  font-size: 1rem;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.glass-panel {
+  background: var(--bg-muted);
+  border: 1px solid var(--border-dim);
+  border-radius: 1rem;
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+}
+
+.input-field {
+  background-color: var(--bg-muted);
+  border: 1px solid var(--border-dim);
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  width: 100%;
+}
+
+.input-field:focus { border-color: var(--accent); }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 10px; }

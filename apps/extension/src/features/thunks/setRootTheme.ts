@@ -6,7 +6,7 @@ export const setRootTheme = createAsyncThunk(
   "ui/setTheme",
   async (theme: Theme) => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
+    root.classList.remove("light", "dark", "amoled");
 
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
@@ -17,8 +17,7 @@ export const setRootTheme = createAsyncThunk(
     } else {
       root.classList.add(theme);
     }
-
-    // Return the theme to be stored in Redux and persisted
+ 
     return theme;
   }
 );

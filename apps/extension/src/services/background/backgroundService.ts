@@ -1,91 +1,132 @@
-import setNotification from '@/utils/Notification'
 import { handleMessage } from './message-handler'
-import type { createNativeMessagingService } from './nativeMessagingService'
-import { createWebSocketService } from './websocketService'
+import { initContextMenu, handleContextMenuClick } from './context-menu'
+import {
+  loadFoldersFromProviders,
+  getProviderStatus,
+} from '@/services/api/saasClient'
+import { clearCloudConnectionCache } from '@/services/auth/sessionAuth'
+import { checkAuthStatus } from '@/services/api/saasClient'
+import type { Folder, RawFolderNode } from '@/types'
 
-export interface BackgroundContext {
-  webSocket: ReturnType<typeof createWebSocketService>
-  nativeMessaging?: ReturnType<typeof createNativeMessagingService>
-  hostLaunched: boolean
-}
+let startupComplete = false
 
-const ctx: BackgroundContext = {
-  webSocket: createWebSocketService(),
-  hostLaunched: false,
-}
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export function initBackgroundService(): void {
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    handleMessage(ctx, message, sender, sendResponse)
-    return true
-  })
-
-  chrome.runtime.onStartup.addListener(() => {
-    setNotification('Extension started', 'info')
-    launchAndConnectToHost(ctx)
-  })
-
-  chrome.runtime.onInstalled.addListener(() => {
-    setNotification('Extension installed', 'info')
-    chrome.tabs.create({ url: 'https://obsidianplus.devazeem.me/install' })
-    launchAndConnectToHost(ctx)
-  })
-
-  chrome.runtime.onSuspend.addListener(() => {
-    setNotification('Extension suspended', 'info')
-  })
-
-  chrome.runtime.onUpdateAvailable.addListener(() => {
-    setNotification('Extension update available', 'info')
-    // chrome.tabs.create({ url: 'https://obsidianplus.devazeem.me/updates' })
-  })
-}
-
-export async function launchAndConnectToHost(
-  ctx: BackgroundContext,
-): Promise<void> {
-  if (ctx.webSocket.isConnected()) {
-    setNotification('Host already launched and connected.', 'info')
-    return
+async function tryObtainExtensionToken(): Promise<boolean> {
+  try {
+    const ok = await checkAuthStatus()
+    if (ok) {
+      console.log('[Extension Auth] Server-side session active')
+      return true
+    }
+  } catch (err) {
+    console.warn('[Extension Auth] Error checking auth status:', err)
   }
+  
+  try {
+    await clearCloudConnectionCache()
+  } catch (err) {
+    console.error('[Extension Auth] Failed to clear cloud cache:', err)
+  }
+  console.log('[Extension Auth] No valid server-side session; cleared cloud connection cache')
+  return false
+}
+
+
+function normalizeFolders(rawFolders: RawFolderNode[] = []): Folder[] {
+  return rawFolders.map((folder) => ({
+    id: folder.id || '',
+    name: folder.name || 'Untitled',
+    path: folder.path || folder.path_display || `/${folder.name || 'Untitled'}`,
+    folders: normalizeFolders(folder.folders || []),
+  }))
+}
+
+export async function loadFoldersAsync(maxRetries = 3): Promise<void> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const statusRes = await getProviderStatus()
+      if (statusRes.success && statusRes.data?.connections) {
+        const connections = statusRes.data.connections
+
+        const gdriveConn = connections.find(
+          (c) => c.provider === 'gdrive' && c.status === 'active',
+        )
+        const onedriveConn = connections.find(
+          (c) => c.provider === 'onedrive' && c.status === 'active',
+        )
+        const dropboxConn = connections.find(
+          (c) => c.provider === 'dropbox' && c.status === 'active',
+        )
+        const notionConn = connections.find(
+          (c) => c.provider === 'notion' && c.status === 'active',
+        )
+
+        await chrome.storage.local.set({
+          googleDriveConnection: !!gdriveConn,
+          oneDriveConnection: !!onedriveConn,
+          dropboxConnection: !!dropboxConn,
+          notionConnection: !!notionConn,
+        })
+
+        console.log('[Extension] Synced provider connection statuses')
+      }
+ 
+      const result = await loadFoldersFromProviders()
+      if (result.success && result.data?.folders) {
+        const folders = result.data.folders as Record<string, RawFolderNode[]>
+        if (folders.gdrive) {
+          await chrome.storage.local.set({
+            googleDriveFolders: normalizeFolders(folders.gdrive),
+          })
+        }
+        if (folders.onedrive) {
+          await chrome.storage.local.set({
+            oneDriveFolders: normalizeFolders(folders.onedrive),
+          })
+        }
+        if (folders.dropbox) {
+          await chrome.storage.local.set({
+            dropboxFolders: normalizeFolders(folders.dropbox),
+          })
+        }
+        if (folders.notion) {
+          await chrome.storage.local.set({
+            notionFolders: normalizeFolders(folders.notion),
+          })
+        }
+        console.log('[Extension] Loaded folders from all providers')
+      }
+      
+      // If we made it here, success, so break out of retry loop
+      return
+    } catch (error) {
+      console.warn(`[Extension] Failed to load folders (Attempt ${attempt}/${maxRetries}):`, error)
+      if (attempt < maxRetries) {
+        await delay(1000 * attempt) // Linear backoff
+      } else {
+        console.error('[Extension] Exhausted retries loading folders.')
+      }
+    }
+  }
+}
+
+export async function runStartupSync(): Promise<void> {
+  if (startupComplete) return
+  startupComplete = true
 
   try {
-    startNativeHost()
-    await connectViaWebSocket(ctx)
-  } catch (error) {
-    setNotification('Failed to connect to host: ' + error, 'warning')
+    const authed = await tryObtainExtensionToken()
+    if (!authed) return
+ 
+    await loadFoldersAsync()
+  } catch (err) {
+    console.warn('[Extension] Startup sync failed:', err)
   }
 }
 
-async function connectViaWebSocket(ctx: BackgroundContext): Promise<void> {
-  await ctx.webSocket
-    .connect()
-    .then(() => {})
-    .catch(() => {})
-  ctx.hostLaunched = true
+export function resetStartupFlag(): void {
+  startupComplete = false
 }
 
-let port: chrome.runtime.Port | null = null
-export function startNativeHost() {
-  port = chrome.runtime.connectNative('com.obsidianplus.host')
-  ctx.hostLaunched = true
-  setNotification('Native messaging host connected', 'info')
-
-  port.onDisconnect.addListener(() => {
-    setNotification('Native messaging port disconnected', 'info')
-    if (chrome.runtime.lastError) {
-      setNotification(
-        'Error: ' + chrome.runtime.lastError.message,
-        'error',
-      )
-    }
-    port = null
-  })
-
-  port.onMessage.addListener((message) => {
-    setNotification(
-      'Received message from native host: ' + JSON.stringify(message),
-      'info',
-    )
-  })
-}
+export { handleMessage, initContextMenu, handleContextMenuClick }

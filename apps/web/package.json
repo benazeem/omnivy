@@ -1,44 +1,46 @@
 {
-  "name": "@obsidianplus/web",
+  "name": "@omnivy/web",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vite --port 3000",
-    "start": "vite --port 3000",
-    "build": "vite build && tsc",
-    "serve": "vite preview",
-    "test": "vitest run",
-    "lint": "eslint",
-    "format": "prettier",
-    "check": "prettier --write . && eslint --fix"
+  "prisma": {
+    "schema": "prisma/schema.prisma"
   },
-  "dependencies": { 
-    "@tailwindcss/vite": "^4.0.6",
-    "@tanstack/react-router": "^1.121.2",
-    "@tanstack/react-router-devtools": "^1.121.2",
-    "fs": "0.0.1-security",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "start": "next start --port 3000",
+    "build": "prisma generate && next build",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.11.2",
+    "@omnivy/ui": "workspace:*",
+    "@prisma/client": "^6.19.3",
+    "axios": "^1.10.0",
+    "cheerio": "^1.2.0",
+    "jose": "^6.2.3",
     "jszip": "^3.10.1",
+    "lucide-react": "^0.525.0",
     "motion": "^12.23.6",
+    "next": "^15.1.6",
+    "next-auth": "5.0.0-beta.25",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwindcss": "^4.0.6",
-    "three": "^0.178.0"
+    "three": "^0.178.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@obsidianplus/tsconfig": "workspace:*",
-    "@tanstack/eslint-config": "^0.1.0",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/react": "^16.2.0",
+    "@omnivy/tsconfig": "workspace:*",
+    "@tailwindcss/postcss": "^4.1.11",
     "@types/jszip": "^3.4.0",
+    "@types/node": "^24.1.0",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@types/three": "^0.178.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "jsdom": "^26.0.0",
-    "prettier": "^3.5.3",
-    "typescript": "^5.7.2",
-    "vite": "^6.1.0",
-    "vitest": "^3.0.5",
-    "web-vitals": "^4.2.4"
+    "eslint": "^9.29.0",
+    "eslint-config-next": "^15.1.6",
+    "postcss": "^8.5.6",
+    "prisma": "^6.19.3",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.7.2"
   }
 }
