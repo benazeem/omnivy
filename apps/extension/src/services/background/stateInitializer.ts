@@ -4,22 +4,25 @@ import {
   loadObsidianState,
   loadOneDriveState,
   loadUIState,
-} from "@/features";
-import {type AppDispatch } from "@/store";
-import setNotification from "@/utils/Notification";
+  loadBehaviorState,
+  loadInterpreterState,
+  loadNotionState,
+} from '@/features'
+import { type AppDispatch } from '@/store'
 
 export const initializeStates = async (dispatch: AppDispatch) => {
   try {
-    // Execute sequentially to avoid race conditions
-    await dispatch(loadObsidianState()).unwrap();
-    await dispatch(loadGoogleDriveState()).unwrap();
-    await dispatch(loadOneDriveState()).unwrap();
-    await dispatch(loadDropboxState()).unwrap();
-    await dispatch(loadUIState()).unwrap();
+    await Promise.all([
+      dispatch(loadObsidianState()).unwrap(),
+      dispatch(loadGoogleDriveState()).unwrap(),
+      dispatch(loadOneDriveState()).unwrap(),
+      dispatch(loadDropboxState()).unwrap(),
+      dispatch(loadUIState()).unwrap(),
+      dispatch(loadBehaviorState()).unwrap(),
+      dispatch(loadInterpreterState()).unwrap(),
+      dispatch(loadNotionState()).unwrap(),
+    ])
   } catch (error) {
-    setNotification(
-      "Failed to initialize states: " + error,
-      "error"
-    );
+    console.error('[Omnivy] Failed to initialize states:', error)
   }
-};
+}

@@ -1,95 +1,79 @@
-import { dropboxApi } from '@/features/api/dropboxApi'
-import { googleDriveApi } from '@/features/api/googleDriveApi'
-import { oneDriveApi } from '@/features'
 import { setDropboxFolders } from '@/features/dropboxSlice'
 import { setGoogleDriveFolders } from '@/features/googleDriveSlice'
 import { setOneDriveFolders } from '@/features/oneDriveSlice'
-import type { AppDispatch } from '@/store'
-import { oneDriveFolderTransformation } from '@/utils/oneDriveFolderTranformation'
-import { googleDriveFolderTransformation } from '@/utils/googleDriveFolderTransformation'
-import { dropboxFolderTransformation } from '@/utils/dropboxFolderTransformation' 
 import { showNotification } from '@/features/notificationSlice'
+import { loadFoldersFromProviders } from '@/services/api/saasClient'
+import type { AppDispatch } from '@/store'
+import type { Folder, RefreshableCloudServiceId } from '@/types'
 
-export default function refreshCloudFiles(
-  cloud: string,
+type RawFolderNode = {
+  id?: string
+  name?: string
+  path?: string
+  path_display?: string
+  parentReference?: { path?: string }
+  folders?: RawFolderNode[]
+}
+
+function normalizeFolders(rawFolders: RawFolderNode[] = []): Folder[] {
+  return rawFolders.map((folder) => ({
+    id: folder.id || '',
+    name: folder.name || 'Untitled',
+    path:
+      folder.path ||
+      folder.path_display ||
+      folder.parentReference?.path ||
+      `/${folder.name || 'Untitled'}`,
+    folders: normalizeFolders(folder.folders || []),
+  }))
+}
+
+export default async function refreshCloudFiles(
+  cloud: RefreshableCloudServiceId,
   dispatch: AppDispatch, 
 ) {
-  switch (cloud) {
-    case 'gdrive':
-      return refreshGoogleDriveFiles(dispatch )
-    case 'onedrive':
-      return refreshOneDriveFiles(dispatch )
-    case 'dropbox':
-      return refreshDropboxFiles(dispatch )
-    default:
-      throw new Error('Unsupported cloud storage type')
-  }
-}
-
-const refreshGoogleDriveFiles = async (
-  dispatch: AppDispatch, 
-) => {
   try {
-    const foldersResponse = await dispatch(
-      googleDriveApi.endpoints.listDriveFolders.initiate({
-        parentId: 'root',
-      }),
-    ).unwrap()
+    const displayNames: Record<RefreshableCloudServiceId, string> = {
+      gdrive: 'Google Drive',
+      onedrive: 'OneDrive',
+      dropbox: 'Dropbox',
+    }
 
-    const googleDriveFolders = await googleDriveFolderTransformation(
-      foldersResponse.folders,
-      dispatch,
-    )
+    const res = await loadFoldersFromProviders(cloud)
+    if (!res.success || !res.data?.folders) {
+      throw new Error(res.error || 'Failed to fetch folders from server')
+    }
 
-    dispatch(setGoogleDriveFolders(googleDriveFolders))
+    const rawFolders =
+      (res.data.folders as Record<string, RawFolderNode[]>)[cloud] || []
+    const folders = normalizeFolders(rawFolders)
+
+    if (cloud === 'gdrive') {
+      dispatch(setGoogleDriveFolders(folders))
+      await chrome.storage.local.set({ googleDriveFolders: folders })
+    } else if (cloud === 'onedrive') {
+      dispatch(setOneDriveFolders(folders))
+      await chrome.storage.local.set({ oneDriveFolders: folders })
+    } else {
+      dispatch(setDropboxFolders(folders))
+      await chrome.storage.local.set({ dropboxFolders: folders })
+    }
+
     dispatch(
-      showNotification({ message: 'Google Drive folders refreshed successfully', type: 'info' })
+      showNotification({
+        message: `${displayNames[cloud]} folders refreshed successfully`,
+        type: 'info',
+      })
     )
-  } catch {
+    return true
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
     dispatch(
-      showNotification({ message: 'Failed to refresh Google Drive files: ', type: 'error' })
+      showNotification({
+        message: `Failed to refresh folders: ${message}`,
+        type: 'error',
+      })
     )
-    return []
-  }
-}
-
-const refreshOneDriveFiles = async (
-  dispatch: AppDispatch, 
-) => {
-  try {
-    const foldersResponse = await dispatch(
-      oneDriveApi.endpoints.listOneDriveFolders.initiate(
-        { parentId: 'root' },
-        { forceRefetch: true },
-      ),
-    ).unwrap()
-
-    const oneDriveFolders = await oneDriveFolderTransformation(
-      foldersResponse.folders,
-      dispatch,
-    )
-    dispatch(setOneDriveFolders(oneDriveFolders || []))
-    dispatch(showNotification({ message: 'OneDrive folders refreshed successfully', type: 'info' }))
-  } catch {
-    dispatch(showNotification({ message: 'Failed to refresh OneDrive files: ', type: 'error' }))
-    return []
-  }
-}
-
-const refreshDropboxFiles = async (
-  dispatch: AppDispatch, 
-) => {
-  try {
-    const folders = await dispatch(
-      dropboxApi.endpoints.listDropboxFolders.initiate({ path: '' }),
-    ).unwrap()
-
-    const dropboxFolders = await dropboxFolderTransformation(folders, dispatch)
-
-    dispatch(setDropboxFolders(dropboxFolders))
-    dispatch(showNotification({ message: 'Dropbox folders refreshed successfully', type: 'info' }))
-  } catch {
-    dispatch(showNotification({ message: 'Failed to refresh Dropbox files: ', type: 'error' }))
-    return []
+    return false
   }
 }

@@ -1,7 +1,19 @@
 {
-  "name": "com.obsidianplus.host",
-  "description": "Obsidian Plus Native Messaging Host: Native host for Obsidian Plus Chrome extension",
-  "path": "obsidianPlus.%%EXTENSION%%",
-  "type": "stdio",
-  "allowed_origins": ["chrome-extension://nbeeifpffimepiobjmhpfihileadikdo/"]
+  "name": "Omnivy",
+  "short_name": "Omnivy",
+  "description": "Capture clean web clips and save them to Obsidian, Notion, Google Drive, OneDrive, or Dropbox.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.ico",
+      "sizes": "any",
+      "type": "image/x-icon",
+      "purpose": "any"
+    }
+  ]
 }

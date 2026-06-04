@@ -1,3 +1,5 @@
+"use client"
+
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
@@ -10,11 +12,24 @@ export function ThreeScene() {
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000)
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
-
-    renderer.setSize(400, 400)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     renderer.setClearColor(0x73a1b2, 0)
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
+ 
+    const existingCanvas = mountRef.current.querySelector('canvas')
+    if (existingCanvas) { 
+      mountRef.current.removeChild(existingCanvas)
+    }
+
+    renderer.domElement.classList.add('three-scene-canvas')
+ 
+    const widthFactor = 0.65
+    const initialWidth = (mountRef.current.clientWidth || 400) * widthFactor
+    const initialHeight = mountRef.current.clientHeight || 400
+    renderer.setSize(Math.floor(initialWidth), Math.floor(initialHeight)) 
+    renderer.domElement.style.width = `${widthFactor * 100}%`
+    renderer.domElement.style.height = '100%'
     mountRef.current.appendChild(renderer.domElement)
 
     const createObsidianGeometry = () => {
@@ -133,50 +148,70 @@ export function ThreeScene() {
       geometry.computeVertexNormals()
 
       return geometry
-    }
+    } 
 
-    // Create the main Obsidian crystal
-    const obsidianGroup = new THREE.Group()
-    // Main Obsidian crystal
+    const obsidianGroup = new THREE.Group() 
     const obsidianGeometry = createObsidianGeometry()
+ 
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.9)
+    scene.add(hemi)
 
-    // Create materials for different faces (like the logo)
-    const materials = [
-      // Dark blue material (left side)
-      new THREE.MeshPhongMaterial({
-        color: 0x1e3a8a,
-        transparent: true,
-        opacity: 0.9,
-        shininess: 120,
-        specular: 0x4a90e2,
-      }),
-    ]
+    const dir = new THREE.DirectionalLight(0xffffff, 0.9)
+    dir.position.set(5, 10, 7)
+    dir.castShadow = true
+    dir.shadow.camera.left = -10
+    dir.shadow.camera.right = 10
+    dir.shadow.camera.top = 10
+    dir.shadow.camera.bottom = -10
+    dir.shadow.mapSize.width = 1024
+    dir.shadow.mapSize.height = 1024
+    scene.add(dir)
 
-    // Create multiple versions with different materials to simulate the logo's color sections
-    const mainObsidian = new THREE.Mesh(obsidianGeometry, materials[1])
+    const ambient = new THREE.AmbientLight(0xffffff, 0.12)
+    scene.add(ambient)
+
+    // PMREM environment for realistic lighting/reflections (dynamic import)
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    pmrem.compileEquirectangularShader()
+    let envMap: THREE.Texture | null = null
+    import('three/examples/jsm/environments/RoomEnvironment')
+      .then(({ RoomEnvironment }) => {
+        const roomEnv = new RoomEnvironment()
+        envMap = pmrem.fromScene(roomEnv, 0.04).texture
+        scene.environment = envMap
+        pmrem.dispose()
+      })
+      .catch(() => {
+        // If examples aren't available, keep lights-only fallback
+        try {
+          pmrem.dispose()
+        } catch (e) {
+          // ignore
+        }
+      })
+ 
+    const mainMaterial = new THREE.MeshStandardMaterial({
+      color: 0x4f46e5, // indigo-600
+      roughness: 0.18,
+      metalness: 0.12,
+      emissive: 0xff6b6b, // reddish accent
+      emissiveIntensity: 0.12,
+      transparent: false,
+      opacity: 1,
+    })
+
+    const mainObsidian = new THREE.Mesh(obsidianGeometry, mainMaterial)
     mainObsidian.castShadow = true
     mainObsidian.receiveShadow = true
     obsidianGroup.add(mainObsidian)
 
-    // Add wireframe for definition (like the black outlines in the logo)
-    const wireframeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x3b82f6,
-      wireframe: false,
-    //   side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.9,
-    })
-
-    const wireframe = new THREE.Mesh(obsidianGeometry, wireframeMaterial)
-    wireframe.scale.set(1.001, 1.001, 1.001) // Slightly larger to avoid z-fighting
-    obsidianGroup.add(wireframe)
-
     const edges = new THREE.EdgesGeometry(obsidianGeometry)
     const edgeMaterial = new THREE.LineBasicMaterial({
-      color: 0x3b82f6,
+      color: 0x4f46e5,
       linewidth: 0.001,
-      transparent: true,
-      opacity: 0.9,
+      transparent: false,
+      opacity: 1,
+      depthTest: true,
     })
     const edgeLines = new THREE.LineSegments(edges, edgeMaterial)
     obsidianGroup.add(edgeLines)
@@ -186,16 +221,53 @@ export function ThreeScene() {
     camera.position.set(1, 1, 4)
     camera.lookAt(0, 0, 0)
 
+    // Edge color/hover and raycaster setup (declare before animate to avoid TDZ)
+    // Use indigo base and reddish hover color
+    let baseEdgeHex = 0x4f46e5 // indigo-600
+    const hoverEdgeHex = 0xff6b6b // warm reddish
+    const baseEdgeColor = new THREE.Color(baseEdgeHex)
+    const hoverEdgeColor = new THREE.Color(hoverEdgeHex)
+
+    const raycaster = new THREE.Raycaster()
+    const pointer = new THREE.Vector2()
+    let isHovering = false
+    const onPointerMove = (e: PointerEvent) => {
+      const rect = renderer.domElement.getBoundingClientRect()
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1
+      raycaster.setFromCamera(pointer, camera)
+      const intersects = raycaster.intersectObject(mainObsidian, true)
+      isHovering = intersects.length > 0
+    }
+    const onPointerLeave = () => {
+      isHovering = false
+    }
+    renderer.domElement.addEventListener('pointermove', onPointerMove)
+    renderer.domElement.addEventListener('pointerleave', onPointerLeave)
+
     // Animation loop
     let time = 0
+    let rafId: number | null = null
     const animate = () => {
-      requestAnimationFrame(animate)
+      rafId = requestAnimationFrame(animate)
       time += 0.01
 
-      obsidianGroup.rotation.y += 0.005
-      obsidianGroup.rotation.x = Math.sin(time * 0.3) * 0.05
-      obsidianGroup.position.y = Math.sin(time * 2) * 0.1
-      obsidianGroup.position.x = Math.sin(time * 2) * 0.1
+      // Gentle continuous rotation
+      obsidianGroup.rotation.y += 0.0075
+      // Subtle pitch bob and float
+      obsidianGroup.rotation.x = Math.sin(time * 0.35) * 0.045
+      obsidianGroup.position.y = Math.sin(time * 1.6) * 0.09
+      obsidianGroup.position.x = Math.sin(time * 1.3) * 0.06
+      // Slight breathing scale for a lively effect
+      const scale = 1 + Math.sin(time * 1.2) * 0.01
+      obsidianGroup.scale.set(scale, scale, scale)
+
+      // Edge color/opacity animation based on hover (isHovering updated by pointer events)
+      const lerpTarget = isHovering ? hoverEdgeColor : baseEdgeColor
+      edgeMaterial.color.lerp(lerpTarget, 0.08)
+      const baseOpacity = 0.55
+      const hoverPulse = isHovering ? 0.25 * (0.5 + 0.5 * Math.sin(time * 8)) : 0
+      edgeMaterial.opacity = Math.max(0.15, 0.95 * baseOpacity + hoverPulse)
 
       renderer.render(scene, camera)
     }
@@ -205,37 +277,106 @@ export function ThreeScene() {
     // Handle resize
     const handleResize = () => {
       if (mountRef.current) {
-        const width = mountRef.current.clientWidth
-        const height = mountRef.current.clientHeight
+        const width = (mountRef.current.clientWidth || 400) * widthFactor
+        const height = mountRef.current.clientHeight || 400
         camera.aspect = width / height
         camera.updateProjectionMatrix()
-        renderer.setSize(width, height)
+        renderer.setSize(Math.floor(width), height)
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
       }
     }
+
+    const setThemeColors = (isDark: boolean) => {
+      if (!mainMaterial) return
+      if (isDark) {
+        mainMaterial.color.setHex(0x0f1724) // deep cool base
+        mainMaterial.emissive.setHex(0x06223a)
+        mainMaterial.roughness = 0.28
+        mainMaterial.metalness = 0.06
+        baseEdgeHex = 0x38bdf8
+        renderer.domElement.style.filter = 'contrast(1.12) saturate(1.2)'
+      } else {
+        mainMaterial.color.setHex(0x2b3f96) // brighter blue in light mode
+        mainMaterial.emissive.setHex(0x001228)
+        mainMaterial.roughness = 0.22
+        mainMaterial.metalness = 0.02
+        baseEdgeHex = 0x2563eb
+        renderer.domElement.style.filter = 'contrast(1.05) saturate(1.05)'
+      }
+      baseEdgeColor.setHex(baseEdgeHex)
+      mainMaterial.needsUpdate = true
+      edgeMaterial.needsUpdate = true
+    }
+ 
+    const htmlEl = document.documentElement
+    const applyTheme = () => {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      const hasDarkClass = htmlEl.classList.contains('dark')
+      setThemeColors(hasDarkClass || prefersDark)
+    }
+
+    applyTheme()
+
+    const themeObserver = new MutationObserver(() => applyTheme())
+    themeObserver.observe(htmlEl, { attributes: true, attributeFilter: ['class'] })
+    const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)')
+    const mqHandler = () => applyTheme()
+    if (mq && mq.addEventListener) mq.addEventListener('change', mqHandler)
+    else if (mq && (mq as any).addListener) (mq as any).addListener(mqHandler)
+
 
     window.addEventListener('resize', handleResize)
 
     return () => {
       window.removeEventListener('resize', handleResize)
+
+      // Cancel animation frame loop
+      if (typeof rafId === 'number') {
+        cancelAnimationFrame(rafId)
+      }
+
       if (mountRef.current) {
-        mountRef.current.removeChild(renderer.domElement)
+        if (mountRef.current.contains(renderer.domElement)) {
+          mountRef.current.removeChild(renderer.domElement)
+        }
+        mountRef.current.innerHTML = ''
+      }
+
+      // Dispose renderer resources
+      try {
+        renderer.forceContextLoss()
+      } catch (e) {
+        // ignore
       }
       renderer.dispose()
-      window.removeEventListener('resize', handleResize)
 
-      // Clean up geometries and materials
+      // Clean up geometries, materials, and listeners
       obsidianGeometry.dispose()
-      materials.forEach((material) => material.dispose())
-      wireframeMaterial.dispose()
+      if (mainMaterial) mainMaterial.dispose()
       edgeMaterial.dispose()
+      if (edges) edges.dispose()
+      if (edgeLines && edgeLines.geometry) edgeLines.geometry.dispose()
+
+      // Dispose environment map if present
+      try {
+        if (scene.environment && (scene.environment as any).dispose) (scene.environment as any).dispose()
+      } catch (e) {
+        // ignore
+      }
+
+      // Remove interaction listeners
+      renderer.domElement.removeEventListener('pointermove', onPointerMove)
+      renderer.domElement.removeEventListener('pointerleave', onPointerLeave)
+      themeObserver.disconnect()
+      if (mq && mq.removeEventListener) mq.removeEventListener('change', mqHandler)
+      else if (mq && (mq as any).removeListener) (mq as any).removeListener(mqHandler)
     }
   }, [])
 
   return (
     <div
       ref={mountRef}
-      className="flex justify-center items-center w-full h-96 rounded-lg overflow-hidden three-scene-container"
-      style={{ minHeight: '200px' }}
+      className="flex justify-center items-center w-full h-96 min-h-[200px] rounded-lg overflow-hidden three-scene-container"
     />
   )
 }

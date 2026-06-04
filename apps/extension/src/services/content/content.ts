@@ -1,135 +1,232 @@
 import type { PageInfo } from '@/types'
+import { extractKnowledgeContent } from './knowledge'
+import {
+  cleanTextContent,
+  fallbackTitle,
+  imageMarkdownFrom,
+  resolveContentRoot,
+} from './knowledge/utils/dom'
+import { elementToMarkdown } from './knowledge/extractors/markdownRenderer'
+
+const CONTENT_ROOT_SELECTORS = [
+  'article',
+  'main',
+  '[role="main"]',
+  '.post-content',
+  '.article-content',
+  '.entry-content',
+  '.markdown-body',
+  '.prose',
+  '#content',
+  '.content',
+]
+
+const FALLBACK_BLOCK_SELECTOR =
+  'h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote, pre, table, img'
+
+const REMOVE_FROM_CAPTURE_SELECTOR = [
+  'script',
+  'style',
+  'noscript',
+  'iframe',
+  'header',
+  'footer',
+  'nav',
+  'aside',
+  '[aria-hidden="true"]',
+  '.ads',
+  '.ad',
+  '.advertisement',
+  '.sidebar',
+  '.cookie',
+  '.newsletter',
+].join(',')
 
 function initialize(): void {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleMessage(message, sender, sendResponse)
-    return true // Keep the message channel open
+    return true
   })
 }
 
-type Message =
-  | { type: 'PING' }
-  | { type: 'GET_PAGE_INFO' }
-  | {
-      type: 'SHOW_NOTIFICATION'
-      payload: { message: string; type: 'info' | 'error' | 'warning' }
-    }
-  | { type: string; [key: string]: unknown }
-
 async function handleMessage(
-  message: Message,
-  sender: chrome.runtime.MessageSender,
+  message: { type: string; content?: string },
+  _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<void> {
-  console.log('Sender:', sender, 'Received message:', message)
-
   switch (message.type) {
     case 'PING':
       sendResponse({ success: true })
-      break
+      return
 
     case 'GET_PAGE_INFO':
-      sendResponse({ success: true, data: getPageInfo() })
-      break
+      sendResponse({ success: true, data: getDetailedPageInfo() })
+      return
 
-    case 'SHOW_NOTIFICATION': {
-      const payload = message.payload as {
-        message: string
-        type: 'info' | 'error' | 'warning'
-      }
-      showNotification(payload.message, payload.type)
+    case 'COPY_TO_CLIPBOARD':
+      await copyTextToClipboard(message.content ?? '')
       sendResponse({ success: true })
-      break
-    }
+      return
 
     default:
-      sendResponse({ success: false, error: 'Unknown message type' })
+      sendResponse({ success: false, error: 'Unsupported content message' })
   }
 }
 
-function getPageInfo(): PageInfo {
-  const clonedBody = document.body.cloneNode(true) as HTMLElement
-  const tagsSet = new Set<string>()
-  const descriptionRaw = document
-    .querySelector('meta[name="description"]')
-    ?.getAttribute('content')
-  const description = descriptionRaw === null ? undefined : descriptionRaw
+function getDetailedPageInfo(): PageInfo {
+  const pageUrl = new URL(window.location.href)
+  const knowledge = extractKnowledgeContent(document, pageUrl)
+  const contentRoot = resolveContentRoot(document, CONTENT_ROOT_SELECTORS)
+  const fallbackMarkdown = contentRoot ? renderFallbackMarkdown(contentRoot) : ''
+  const fallbackText = contentRoot ? cleanTextContent(contentRoot.innerText) : ''
+  const tags = mergeTags(collectPageTags(), knowledge?.tags || [])
 
-  const hashtagMatches = clonedBody.textContent?.match(/#[a-zA-Z0-9_-]+/g)
-  if (hashtagMatches) {
-    hashtagMatches.forEach((tag) => tagsSet.add(tag.slice(1).toLowerCase()))
-  }
-  const keywords = document
-    .querySelector('meta[name="keywords"]')
-    ?.getAttribute('content')
-  if (keywords) {
-    keywords
-      .split(',')
-      .map((k) => k.trim())
-      .filter(Boolean)
-      .forEach((tag) => tagsSet.add(tag))
-  }
-  const uniqueTags = Array.from(tagsSet).filter((tag) => {
-    // Remove tags that are all hex digits and length 3-6 (likely color codes)
-    if (/^(?:[a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/i.test(tag)) return false
-    // Remove tags that are only numbers
-    if (/^\d+$/.test(tag)) return false
-    // Remove tags that are hex color codes with length 3 or 6 (e.g. "d33", "085", "ccf", "ddf")
-    if (/^[a-fA-F0-9]{3}$/.test(tag) || /^[a-fA-F0-9]{6}$/.test(tag))
-      return false
-    return true
-  })
   return {
-    title: document.title,
-    url: window.location.href,
-    domain: window.location.hostname,
+    title: knowledge?.title || meta('og:title') || fallbackTitle(document),
+    url: pageUrl.href,
+    domain: pageUrl.hostname,
+    description:
+      knowledge?.description ||
+      meta('og:description') ||
+      meta('description') ||
+      '',
+    author:
+      knowledge?.author ||
+      meta('article:author') ||
+      meta('author') ||
+      cleanTextContent(document.querySelector('[rel="author"]')?.textContent || '') ||
+      'Unknown',
+    tags,
     lastModified: document.lastModified,
     referrer: document.referrer,
-    description,
-    tags: uniqueTags,
-    html: clonedBody.innerHTML,
+    html: fallbackMarkdown || fallbackText,
+    markdown: knowledge?.markdown || fallbackMarkdown,
+    links: collectPageLinks(contentRoot || document.body, pageUrl),
     timestamp: Date.now(),
   }
 }
 
-function showNotification(
-  message: string,
-  type: 'info' | 'error' | 'warning',
-): void {
-  const notification = document.createElement('div')
-  notification.style.cssText = `
-    position: fixed;
-    top: 50px;
-    left: 20px;
-    background: ${type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#4CAF50'};
-    color: #E0E0E0;
-    padding: 12px 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    z-index: 999999;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-    font-size: 14px;
-    max-width: 300px;
-    opacity: 0;
-    transform: translateX(-100%);
-    transition: all 0.3s ease;
-  `
+async function copyTextToClipboard(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return
+  } catch (err) {
+    console.warn('Primary clipboard copy failed, attempting fallback', err)
+  }
 
-  notification.textContent = message
-  document.body.appendChild(notification)
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.style.position = 'fixed'
+  textArea.style.left = '-999999px'
+  textArea.style.top = '-999999px'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
 
-  setTimeout(() => {
-    notification.style.opacity = '1'
-    notification.style.transform = 'translateX(0)'
-  }, 100)
+  try {
+    document.execCommand('copy')
+  } catch (fallbackErr) {
+    console.error('Fallback copy failed:', fallbackErr)
+  } finally {
+    textArea.remove()
+  }
+}
 
-  setTimeout(() => {
-    notification.style.opacity = '0'
-    notification.style.transform = 'translateX(100%)'
-    setTimeout(() => {
-      document.body.removeChild(notification)
-    }, 300)
-  }, 4000)
+function renderFallbackMarkdown(root: HTMLElement): string {
+  const clone = root.cloneNode(true) as HTMLElement
+  clone.querySelectorAll(REMOVE_FROM_CAPTURE_SELECTOR).forEach((el) => el.remove())
+
+  const blocks = Array.from(clone.querySelectorAll(FALLBACK_BLOCK_SELECTOR))
+    .filter((el) => !el.parentElement?.closest(FALLBACK_BLOCK_SELECTOR))
+    .map((el) => {
+      if (el instanceof HTMLImageElement) return imageMarkdownFrom(el) || ''
+      return elementToMarkdown(el)
+    })
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  return blocks.join('\n\n')
+}
+
+function collectPageTags(): string[] {
+  const metaTags = [
+    ...splitTags(meta('keywords')),
+    ...splitTags(meta('article:tag')),
+    ...Array.from(document.querySelectorAll('meta[property="article:tag"]'))
+      .map((tag) => tag.getAttribute('content') || '')
+      .flatMap(splitTags),
+  ]
+
+  const linkTags = Array.from(
+    document.querySelectorAll('a[href*="/tag/"], a[href*="/tags/"]'),
+  ).map((link) => link.textContent || '')
+
+  return mergeTags(metaTags, linkTags)
+}
+
+function collectPageLinks(
+  root: HTMLElement,
+  baseUrl: URL,
+): Array<{ text: string; url: string }> {
+  const links: Array<{ text: string; url: string }> = []
+  const seen = new Set<string>()
+
+  for (const anchor of Array.from(root.querySelectorAll('a[href]'))) {
+    if (anchor.closest('nav, footer, header, aside')) continue
+
+    const href = anchor.getAttribute('href') || ''
+    const text = cleanTextContent(anchor.textContent || '')
+    if (!href || !text) continue
+
+    let url: URL
+    try {
+      url = new URL(href, baseUrl.href)
+    } catch {
+      continue
+    }
+
+    if (!isUsefulLink(url, baseUrl) || seen.has(url.href)) continue
+
+    seen.add(url.href)
+    links.push({
+      text: text.length > 50 ? `${text.slice(0, 47)}...` : text,
+      url: url.href,
+    })
+
+    if (links.length >= 75) break
+  }
+
+  return links
+}
+
+function isUsefulLink(url: URL, baseUrl: URL): boolean {
+  return (
+    !['javascript:', 'mailto:', 'tel:', 'data:'].includes(url.protocol) &&
+    !(url.origin === baseUrl.origin && url.pathname === baseUrl.pathname && url.hash)
+  )
+}
+
+function meta(name: string): string {
+  return (
+    document.querySelector(`meta[property="${name}"]`)?.getAttribute('content') ||
+    document.querySelector(`meta[name="${name}"]`)?.getAttribute('content') ||
+    ''
+  ).trim()
+}
+
+function splitTags(value: string): string[] {
+  return value.split(',').map((tag) => tag.trim())
+}
+
+function mergeTags(...groups: string[][]): string[] {
+  return Array.from(
+    new Set(
+      groups
+        .flat()
+        .map((tag) => tag.trim().toLowerCase())
+        .filter((tag) => tag.length > 2),
+    ),
+  ).slice(0, 12)
 }
 
 initialize()

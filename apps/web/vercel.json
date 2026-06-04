@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "\/api\/jobs\/refresh-chrome-extension-stats",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]

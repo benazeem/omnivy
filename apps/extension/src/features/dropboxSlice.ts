@@ -6,12 +6,14 @@ interface DropboxState {
   connected: boolean;
   folders: Folder[];
   userInfo: UserInfo | null;
+  loading: boolean;
 }
 
 const initialState: DropboxState = {
   connected: false,
   folders: [],
   userInfo: null,
+  loading: true,
 };
 
 const dropboxSlice = createSlice({
@@ -27,16 +29,26 @@ const dropboxSlice = createSlice({
     setDropboxUserInfo(state, action: PayloadAction<UserInfo | null>) {
       state.userInfo = action.payload;
     },
+    resetDropbox() {
+      return initialState;
+    },
   },
   extraReducers: (builder) => {
+    builder.addCase(loadDropboxState.pending, (state) => {
+      state.loading = true;
+    });
     builder.addCase(loadDropboxState.fulfilled, (state, action) => {
       state.connected = action.payload.connected;
       state.folders = action.payload.folders;
       state.userInfo = action.payload.userInfo;
+      state.loading = false;
+    });
+    builder.addCase(loadDropboxState.rejected, (state) => {
+      state.loading = false;
     });
   },
 });
 
-export const { setDropboxConnected, setDropboxUserInfo, setDropboxFolders } =
+export const { setDropboxConnected, setDropboxUserInfo, setDropboxFolders, resetDropbox } =
   dropboxSlice.actions;
 export default dropboxSlice.reducer;

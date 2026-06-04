@@ -5,9 +5,9 @@ import { getChromeLocal } from "@/services/background";
 export const loadObsidianState = createAsyncThunk(
   "obsidian/loadState",
   async () => {
-    const connected = await getChromeLocal("obsidianHostConnection") || false;
+    const connected = await getChromeLocal("obsidianConnected") || false;
     const folders = await getChromeLocal("obsidianFolders") || [];
-    const vaultRoots = await getChromeLocal("obsidianVaultRoots") || [];
-    return { connected, folders, vaultRoots };
+    const vaultNames = await getChromeLocal("obsidianVaultNames") || [];
+    return { connected, folders, vaultNames };
   }
 );

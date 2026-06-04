@@ -1,109 +1,68 @@
-import { useEffect } from 'react'
-import VaultManager from '../components/VaultManager'
-import { Button } from '@obsidianplus/ui'
-import PopupHead from '../components/PopupHead'
-import { useSelector, useDispatch } from 'react-redux'
-import type { AppDispatch, RootState } from '../store'
-import { initializeStates } from '@/services/background'
-import { Bug, Github, MessageSquarePlus } from 'lucide-react'
-import setNotification from '@/utils/Notification'
+import { useSelector } from 'react-redux'
+import type { RootState } from '../store'
+import { API_BASE_URL } from '@/config/api'
+import PopupHeader from '@/components/popup/PopupHeader'
+import PopupMain from '@/components/popup/PopupMain'
+import PopupFooter from '@/components/popup/PopupFooter'
+import PopupLoadingView from '@/components/popup/PopupLoadingView'
+import PopupUnsupportedView from '@/components/popup/PopupUnsupportedView'
+import { useUIEffect } from '@/hooks/useUIEffect'
+import { usePopupController } from '@/hooks/usePopupController'
 
 const Popup: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>()
-  const theme = useSelector((state: RootState) => state.ui.theme)
-  const background = useSelector(
-    (state: RootState) => state.ui.backgroundImageUrl,
-  )
-  const fontSize = useSelector((state: RootState) => state.ui.fontSize)
+  useUIEffect()
 
-  useEffect(() => {
-    const root = window.document.documentElement
+  const uiState = useSelector((state: RootState) => state.ui)
+  const popup = usePopupController()
 
-    root.classList.remove('light', 'dark')
-
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
-        .matches
-        ? 'dark'
-        : 'light'
-
-      root.classList.add(systemTheme)
-      return
-    }
-
-    root.classList.add(theme)
-  }, [theme])
-
-  useEffect(() => {
-    const init = async () => {
-      try {
-        await initializeStates(dispatch)
-      } catch (error) {
-        setNotification('Failed to initialize states: ' + error, 'error')
-      }
-    }
-
-    init()
-  }, [dispatch])
+  const openWebsiteIntegrations = () => {
+    chrome.tabs.create({ url: `${API_BASE_URL}/settings/integrations` })
+  }
 
   return (
     <div
-      className={`w-[300px] max-h-[500px] min-h-[300px] ${fontSize} bg-cover bg-center overflow-y-scroll overflow-x-hidden `}
-      style={{ backgroundImage: `url(${background})` }}
+      className={`flex flex-col w-[380px] h-[580px] ${uiState.fontSize} bg-[var(--bg-popover)] text-[var(--text-main)] overflow-hidden transition-all duration-500`}
     >
-      <PopupHead />
-      <VaultManager />
-      <div className="p-4 flex flex-col items-center justify-center bg-gray-100/40 dark:bg-gray-900/40 gap-2">
-        <h3 className="text-lg font-semibold mb-2">
-          Suggestions &amp; Bug Reports
-        </h3>
-        <div className="flex items-center justify-evenly gap-4">
-          <Button
-            variant={'ghost'}
-            onClick={() => {
-              window.open(
-                'https://github.com/benazeem/obsidianplus/issues/new?template=bug_report.md',
-                '_blank',
-              )
-            }}
-          >
-            <Bug className="inline-block " />
-          </Button>
-          <Button
-            variant={'ghost'}
-            onClick={() => {
-              window.open(
-                'https://github.com/benazeem/obsidianplus/issues/new?template=feature_request.md',
-                '_blank',
-              )
-            }}
-          >
-            <MessageSquarePlus className="inline-block " />
-          </Button>
-          <Button
-            type="button"
-            variant={'ghost'}
-            onClick={() => {
-              window.open('https://github.com/benazeem/obsidianplus', '_blank')
-            }}
-          >
-            <Github className="inline-block" />
-          </Button> 
-        </div>
-        <div>
-          Made with ❤️ by
-          <a
-            href="https://github.com/benazeem"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline"
-          >
-            benazeem
-          </a>
-        </div>
-      </div>
+      <PopupHeader />
+      {popup.pageMode === 'loading' ? (
+        <PopupLoadingView />
+      ) : popup.pageMode === 'unsupported' ? (
+        <PopupUnsupportedView
+          pageTitle={popup.pageTitle}
+          pageUrl={popup.pageUrl}
+          popupError={popup.popupError}
+          onOpenWebsiteIntegrations={openWebsiteIntegrations}
+        />
+      ) : (
+        <>
+          <PopupMain
+            properties={popup.properties}
+            setProperties={popup.setProperties}
+            propertyList={popup.propertyList}
+            onAddProperty={popup.addProperty}
+          />
+          <PopupFooter
+            target={popup.target}
+            setTarget={popup.setTarget}
+            notionStatus={popup.notionStatus}
+            googleDriveStatus={popup.googleDriveStatus}
+            oneDriveStatus={popup.oneDriveStatus}
+            dropboxStatus={popup.dropboxStatus}
+            isConfigured={popup.isConfigured}
+            isSaving={popup.isSaving}
+            isSaved={popup.isSaved}
+            handleSave={popup.handleSave}
+            selectedVault={popup.selectedVault}
+            setSelectedVault={popup.setSelectedVault}
+            selectedFolder={popup.selectedFolder}
+            setSelectedFolder={popup.setSelectedFolder}
+            popupError={popup.popupError}
+          />
+        </>
+      )}
     </div>
   )
 }
 
 export default Popup
+

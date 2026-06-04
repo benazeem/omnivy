@@ -5,7 +5,10 @@ import dropboxReducer from '../features/dropboxSlice'
 import onedriveReducer from '../features/oneDriveSlice'
 import obsidianReducer from '../features/obsidianSlice'
 import notificationReducer from '../features/notificationSlice'
-import { googleDriveApi, dropboxApi, oneDriveApi } from '@/features'
+import notionReducer from '../features/notionSlice'
+import behaviorReducer from '../features/behaviorSlice'
+import interpreterReducer from '../features/interpreterSlice'
+import authReducer from '../features/authSlice'
 import { listenerMiddleware } from '@/features/listeners'
 
 export const store = configureStore({
@@ -16,18 +19,13 @@ export const store = configureStore({
     onedrive: onedriveReducer,
     obsidianVault: obsidianReducer,
     notification: notificationReducer,
-    [googleDriveApi.reducerPath]: googleDriveApi.reducer,
-    [dropboxApi.reducerPath]: dropboxApi.reducer,
-    [oneDriveApi.reducerPath]: oneDriveApi.reducer,
+    notion: notionReducer,
+    behavior: behaviorReducer,
+    interpreter: interpreterReducer,
+    auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware()
-      .prepend(listenerMiddleware.middleware)
-      .concat(
-        googleDriveApi.middleware,
-        dropboxApi.middleware,
-        oneDriveApi.middleware,
-      ),
+    getDefaultMiddleware().prepend(listenerMiddleware.middleware),
 })
 
 export type RootState = ReturnType<typeof store.getState>

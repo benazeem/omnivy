@@ -6,7 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@obsidianplus/ui'
+} from '@omnivy/ui'
 import type { AppDispatch } from '@/store'
 import { setTheme } from '@/features'
 import { showNotification } from '@/features/notificationSlice'

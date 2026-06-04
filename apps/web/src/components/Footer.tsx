@@ -1,127 +1,188 @@
-import { Github, Twitter } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
+import { Github, Twitter, Mail } from 'lucide-react'
+import Link from 'next/link'
+import { Button } from '@omnivy/ui'
 
 function Footer() {
+  const currentYear = new Date().getFullYear()
+
   return (
-    <footer className="bg-gradient-to-br from-purple-500 to-purple-900 text-white py-4 px-4 md:px-8 lg:px-12 flex flex-col items-center gap-2 text-sm md:text-base lg:text-lg">
-      <div className="pt-2">
-        <p className="text-center">
-          A cross-platform bridge between your browser and local filesystem.
-          <br />
-          Created to enhance productivity and unlock local power for web
-          extensions.
-        </p>
-      </div>
-      <div className="w-[90%] h-[1px] bg-gray-100/20" />
-      <div className="flex flex-col sm:flex-row justify-center items-center w-full gap-6 ">
-        <div className="flex justify-between items-start w-full">
-          <img src="/icon.ico" alt="" className=" w-12 lg:w-32 my-auto" />
-          <div className="w-1/2">
-            <h3 className="font-semibold mb-2">Quick Links</h3>
-            <ul className="space-y-1">
-              <li>
+    <footer className="bg-secondary/50 border-t border-slate-200 dark:border-[var(--border-dim)] pt-20 pb-10 px-6">
+      <div className="container mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+          <div className="lg:col-span-1">
+            <Link href="/" className="flex items-center gap-3 mb-6">
+              <div className="p-1.5 bg-brand-600 rounded-lg">
+                <img src="/icon.ico" className="w-6 h-6 invert" alt="Omnivy" />
+              </div>
+              <span className="font-display font-bold text-xl tracking-tight">
+                Omnivy
+              </span>
+            </Link>
+            <p className="text-secondary text-sm leading-relaxed mb-6">
+              Capture clean Markdown from the browser and save it to Obsidian,
+              Notion, Google Drive, OneDrive, or Dropbox.
+            </p>
+            <div className="flex gap-4">
+              <Button asChild size="icon" variant="ghost" className="p-2 rounded-lg">
                 <a
-                  href="https://chromewebstore.google.com/detail/nbeeifpffimepiobjmhpfihileadikdo"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
+                  href="https://github.com/benazeem/omnivy"
                   target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open GitHub repository"
+                  aria-label="Open GitHub repository"
+                >
+                  <Github className="w-5 h-5" />
+                </a>
+              </Button>
+              <Button asChild size="icon" variant="ghost" className="p-2 rounded-lg">
+                <a
+                  href="https://x.com/devazeem"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Open X profile"
+                  aria-label="Open X profile"
+                >
+                  <Twitter className="w-5 h-5" />
+                </a>
+              </Button>
+              <Button asChild size="icon" variant="ghost" className="p-2 rounded-lg">
+                <a
+                  href="mailto:azeemkhandsari@gmail.com"
+                  title="Send email"
+                  aria-label="Send email"
+                >
+                  <Mail className="w-5 h-5" />
+                </a>
+              </Button>
+            </div>
+          </div>
+ 
+          <div>
+            <h4 className="font-bold mb-6 tracking-tight uppercase text-xs text-brand-600 dark:text-brand-400">
+              Product
+            </h4>
+            <ul className="space-y-4 text-sm font-medium">
+              <li>
+                <Link
+                  href="/install"
+                  className="text-secondary hover:text-brand-500 transition-colors"
                 >
                   Install Extension
-                </a>
-              </li>
-              <li>
-                <Link to="/install" className="hover:underline">
-                  Download Native Host
                 </Link>
               </li>
               <li>
-                <a
-                  href="https://github.com/benazeem/obsidianplus"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                  target="_blank"
+                <Link
+                  href="/profile"
+                  className="text-secondary hover:text-brand-500 transition-colors"
+                >
+                  Profile
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/documentation"
+                  className="text-secondary hover:text-brand-500 transition-colors"
                 >
                   Documentation
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/future-improvements"
+                  className="text-secondary hover:text-brand-500 transition-colors"
+                >
+                  Future Improvements
+                </Link>
+              </li>
+            </ul>
+          </div>
+ 
+          <div>
+            <h4 className="font-bold mb-6 tracking-tight uppercase text-xs text-brand-600 dark:text-brand-400">
+              Legal
+            </h4>
+            <ul className="space-y-4 text-sm font-medium">
+              <li>
+                <Link
+                  href="/privacy-policy"
+                  className="text-secondary hover:text-brand-500 transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/terms-of-service"
+                  className="text-secondary hover:text-brand-500 transition-colors"
+                >
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/robots.txt"
+                  className="text-secondary hover:text-brand-500 transition-colors"
+                >
+                  Robots.txt
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/sitemap.xml"
+                  className="text-secondary hover:text-brand-500 transition-colors"
+                >
+                  Sitemap.xml
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/llms.txt"
+                  className="text-secondary hover:text-brand-500 transition-colors"
+                >
+                  LLMs.txt
+                </Link>
+              </li>
+            </ul>
+          </div>
+ 
+          <div>
+            <h4 className="font-bold mb-6 tracking-tight uppercase text-xs text-brand-600 dark:text-brand-400">
+              Developer
+            </h4>
+            <ul className="space-y-4 text-sm font-medium">
+              <li>
+                <Link
+                  href="/developer"
+                  className="text-secondary hover:text-brand-500 transition-colors"
+                >
+                  About Developer
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/request"
+                  className="text-secondary hover:text-brand-500 transition-colors"
+                >
+                  Request Features &amp; Support
+                </Link>
               </li>
             </ul>
           </div>
         </div>
-        {/* Developer & Support */}
-        <div className="flex  justify-between items-start w-full">
-          <div className="w-1/2 ">
-            <h3 className="font-semibold mb-2">Connect With Us</h3>
-            <ul className="space-y-1 flex gap-2">
-              <li>
-                <a
-                  title="Follow on Twitter"
-                  href="https://x.com/devazeem"
-                  className="hover:underline"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  <Twitter />
-                </a>
-              </li>
-              <li>
-                {' '}
-                <a
-                  title="Follow on GitHub"
-                  href="https://github.com/benazeem/obsidianplus"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  className="hover:underline"
-                >
-                  <Github />
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div className="w-1/2">
-            <h3 className="font-semibold mb-2">Developer</h3>
-            <ul className="space-y-1">
-              <li>Created by: Mohd Azeem Malik</li>
-              <li>
-                GitHub:&nbsp;
-                <a
-                  href="https://github.com/benazeem"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  className="hover:underline"
-                >
-                  benazeem
-                </a>
-              </li>
-              <li>
-                Email:&nbsp;
-                <a
-                  href="mailto:azeemkhandsari@gmail.com"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  className="hover:underline"
-                >
-                  azeemkhandsari
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
 
-      <div className="mt-2 w-full flex items-center justify-between text-center text-base text-purple-200">
-        <Link to="/privacy-policy" className="hover:underline text-sm">
-          Privacy Policy
-        </Link>
-        <p className="hidden md:block">
-          &copy; {new Date().getFullYear()} Obsidian Plus. All rights reserved.
-        </p>
-        <Link to="/terms-of-service" className="hover:underline text-sm">
-          Terms of Service
-        </Link>
+        <div className="pt-8 border-t border-slate-200 dark:border-[var(--border-dim)] flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-xs text-secondary">&copy; {currentYear} Omnivy</p>
+          <div className="flex gap-6 text-xs font-medium text-secondary">
+            <Link href="/privacy-policy" className="hover:text-brand-500">
+              Privacy
+            </Link>
+            <Link href="/terms-of-service" className="hover:text-brand-500">
+              Terms
+            </Link>
+            <span>Open Source (MIT)</span>
+          </div>
+        </div>
       </div>
-      <p className="md:hidden inset-0">
-        &copy; {new Date().getFullYear()} Obsidian Plus. All rights reserved.
-      </p>
     </footer>
   )
 }

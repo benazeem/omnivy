@@ -1,9 +1,12 @@
 {
-  "extends": "@obsidianplus/tsconfig/tsconfig.app.json",
+  "extends": "../../packages/typescript-config/tsconfig.app.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "types": ["chrome", "vite/client"],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@public/*": ["public/*"],
+    
     }
   },
   "include": ["src", "../../packages/ui/lib"]

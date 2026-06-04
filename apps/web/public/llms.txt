@@ -1,0 +1,28 @@
+# Omnivy
+
+> Omnivy is a browser clipper for Obsidian, Notion, Google Drive, OneDrive, and Dropbox.
+
+## Core pages
+- /
+- /install
+- /documentation
+- /future-improvements
+- /feedback
+- /developer
+
+## What Omnivy does
+- Captures articles, selections, and bookmarks from the web.
+- Clips into local Obsidian vaults or connected cloud providers.
+- Supports connected accounts for Google Drive, OneDrive, Dropbox, and Notion.
+- Provides a public roadmap and feedback flow for feature requests and bug reports.
+
+## Machine-readable resources
+- /sitemap.xml
+- /robots.txt
+
+## Content summary
+- Home page: product overview, integrations, and setup flow.
+- Install page: Chrome Web Store listing and installation CTA.
+- Documentation: setup and usage guide.
+- Future improvements: roadmap plus current GitHub requests.
+- Feedback: feature requests and bug reports submission form.

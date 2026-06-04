@@ -8,7 +8,7 @@ import {
   DropdownMenu,
   Input,
   Button,
-} from '@obsidianplus/ui'
+} from '@omnivy/ui'
 import type { RootState } from '@/store'
 import { setBackgroundImageUrl, setFontSize } from '@/features/uiSlice'
 import { CircleCheckBig, Trash } from 'lucide-react'
