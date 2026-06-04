@@ -7,10 +7,9 @@
   },
   "scripts": {
     "dev": "next dev --port 3000",
-        "postinstall": "prisma generate",
     "start": "next start --port 3000",
     "build": "prisma generate && next build",
-        "lint": "next lint"
+    "lint": "next lint"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

@@ -30,6 +30,7 @@ build/
 .turbo/
 .cache/
 cache/
+*.tsbuildinfo
 
 # ----------------------------------------
 # Testing
