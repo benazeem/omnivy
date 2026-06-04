@@ -2,7 +2,12 @@ import axios from 'axios'
 import { Prisma } from '@prisma/client'
 import * as cheerio from 'cheerio'
 import { db } from './database'
-import { ChromeExtensionReview, ChromeExtensionReviewsResult, ChromeExtensionStats, ChromeExtensionStatsRow } from '@/types/webStore'
+import {
+  ChromeExtensionReview,
+  ChromeExtensionReviewsResult,
+  ChromeExtensionStats,
+  ChromeExtensionStatsRow,
+} from '@/types/webStore'
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
 const DEFAULT_EXTENSION_ID =
@@ -28,7 +33,6 @@ const FALLBACK_REVIEWS_BY_EXTENSION_ID: Record<
     },
   ],
 }
-
 
 export function getDefaultChromeWebStoreExtensionId() {
   return (
@@ -241,12 +245,14 @@ function parseChromeWebStoreReviews(html: string): ChromeExtensionReview[] {
 
 async function readCachedStats(extensionId: string) {
   await ensureStatsTable()
-  const rows = await db.$queryRaw<ChromeExtensionStatsRow[]>(Prisma.sql`
+  const rows = (await db.$queryRaw(
+    Prisma.sql`
     SELECT extension_id, name, rating, reviews, users, icon, last_updated, source_url, fetched_at
     FROM ${Prisma.raw(TABLE_NAME)}
     WHERE extension_id = ${extensionId}
     LIMIT 1
-  `)
+  `,
+  )) as ChromeExtensionStatsRow[]
 
   return rows[0] ? mapRow(rows[0]) : null
 }
