@@ -12,7 +12,7 @@ export default function SignInForm() {
   const { status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/Profile'
+  const callbackUrl = searchParams.get('callbackUrl') || '/profile'
 
   useEffect(() => {
     if (status === 'authenticated') {
