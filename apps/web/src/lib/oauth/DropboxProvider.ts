@@ -4,11 +4,15 @@ import {
   ClipPayload,
 } from './BaseOAuthProvider'
 import { sanitizeFilename } from '../utils'
+import { getSiteUrl } from '../site'
 
 export class DropboxProvider implements BaseOAuthProvider {
   private clientId = process.env.DROPBOX_CLIENT_ID || ''
   private clientSecret = process.env.DROPBOX_CLIENT_SECRET || ''
-  private redirectUri = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/providers/callback/dropbox`
+ 
+  private get redirectUri(): string {
+    return `${getSiteUrl()}/api/providers/callback/dropbox`
+  }
 
   getAuthUrl(state: string): string {
     const params = new URLSearchParams({
@@ -77,9 +81,13 @@ export class DropboxProvider implements BaseOAuthProvider {
   ): Promise<{ success: boolean; remoteId: string }> {
     const sanitizedTitle = sanitizeFilename(payload.title)
 
+    // 💡 2. Safe normalization of the path to prevent double/missing slashes
     let path = `/Omnivy Web Clips/${sanitizedTitle}.md`
-    if (payload.folderId) { 
-      path = `${payload.folderId}/${sanitizedTitle}.md`
+    if (payload.folderId) {
+      const normalizedFolder = payload.folderId.replace(/\/+$/, '')
+      path = normalizedFolder.startsWith('/') 
+        ? `${normalizedFolder}/${sanitizedTitle}.md`
+        : `/${normalizedFolder}/${sanitizedTitle}.md`
     } else { 
       try {
         const metaRes = await fetch('https://api.dropboxapi.com/2/files/get_metadata', {
@@ -110,9 +118,10 @@ export class DropboxProvider implements BaseOAuthProvider {
       }
     }
 
+    // 💡 3. JSON.stringify safely stringifies text with internal quotes for YAML validation
     const fileContent = `---
-title: "${payload.title}"
-source: "${payload.url || 'Web Clipper'}"
+title: ${JSON.stringify(payload.title)}
+source: ${JSON.stringify(payload.url || 'Web Clipper')}
 tags: [${payload.tags?.map((t) => `"${t}"`).join(', ') || ''}]
 created_at: "${new Date().toISOString()}"
 ---

@@ -1,3 +1,5 @@
+import { getSiteUrl } from "./site"
+
 export function getAllowedExtensionOrigins(): string[] {
   const raw = process.env.EXTENSION_ALLOWED_ORIGINS || ""
   return raw.split(",").map((s) => s.trim()).filter(Boolean)
@@ -5,8 +7,11 @@ export function getAllowedExtensionOrigins(): string[] {
 
 export function getTrustedOrigins(): string[] {
   const allowed = getAllowedExtensionOrigins()
-  const appUrl = process.env.NEXTAUTH_URL
-  if (appUrl) allowed.push(appUrl)
+    const appUrl = getSiteUrl()
+  if (appUrl) {
+    allowed.push(appUrl)
+  }
+  
   return Array.from(new Set(allowed))
 }
 

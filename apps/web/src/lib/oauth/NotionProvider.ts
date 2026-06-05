@@ -1,9 +1,11 @@
+import { getSiteUrl } from "../site"
 import { BaseOAuthProvider, OAuthTokenPayload, ClipPayload } from "./BaseOAuthProvider"
 
 export class NotionProvider implements BaseOAuthProvider {
   private clientId = process.env.NOTION_CLIENT_ID || ""
   private clientSecret = process.env.NOTION_CLIENT_SECRET || ""
-  private redirectUri = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/providers/callback/notion`
+ private get redirectUri(): string {
+     return `${getSiteUrl()}/api/providers/callback/notion`}
 
   getAuthUrl(state: string): string {
     const params = new URLSearchParams({

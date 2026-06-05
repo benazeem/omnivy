@@ -94,7 +94,6 @@ Start from `Example.env`.
 Core app:
 
 ```env
-NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=...
 AUTH_SECRET=...
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
