@@ -2,8 +2,7 @@
   "$schema": "https://turborepo.com/schema.json",
   "globalEnv": [
     "AUTH_TRUST_HOST", 
-    "NEXT_PUBLIC_SITE_URL",
-    "NEXTAUTH_SECRET",
+    "NEXT_PUBLIC_SITE_URL", 
     "AUTH_SECRET",
     "DATABASE_URL",
     "DIRECT_URL",

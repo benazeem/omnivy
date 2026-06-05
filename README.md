@@ -142,7 +142,7 @@ pnpm -C apps/web lint
 
 Use `apps/web/Example.env` as the web app template. It documents:
 
-- `NEXTAUTH_SECRET`, `AUTH_SECRET`, and `NEXT_PUBLIC_SITE_URL`
+- `AUTH_SECRET`, and `NEXT_PUBLIC_SITE_URL`
 - `DATABASE_URL` and `DIRECT_URL`
 - `ENCRYPTION_SECRET` for provider token encryption
 - Google and GitHub sign-in OAuth credentials
