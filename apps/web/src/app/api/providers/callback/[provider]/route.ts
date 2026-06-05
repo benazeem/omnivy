@@ -22,12 +22,13 @@ export async function GET(
   const providerName = params.provider
 
   try { 
-    const session = await getSessionWithFallback()
-    if (!session || !session.user || !session.user.id) {
-      return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/auth/signin?error=SessionExpired`
-      )
-    }
+  const session = await getSessionWithFallback()
+  if (!session || !session.user || !session.user.id) { 
+    const signInUrl = new URL("/auth/signin", req.url)
+    signInUrl.searchParams.set("error", "SessionExpired")
+
+    return NextResponse.redirect(signInUrl)
+  }
 
     const { searchParams } = new URL(req.url)
     const code = searchParams.get("code")

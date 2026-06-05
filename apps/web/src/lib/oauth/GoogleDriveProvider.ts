@@ -1,11 +1,13 @@
 import { BaseOAuthProvider, OAuthTokenPayload, ClipPayload } from "./BaseOAuthProvider"
 import { sanitizeFilename } from "../utils"
+import { getSiteUrl } from "../site"
 
 export class GoogleDriveProvider implements BaseOAuthProvider {
   private clientId = process.env.GOOGLE_CLIENT_ID || ""
   private clientSecret = process.env.GOOGLE_CLIENT_SECRET || ""
-  private redirectUri = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/providers/callback/gdrive`
-
+private get redirectUri(): string {
+    return `${getSiteUrl()}/api/providers/callback/gdrive`
+  }
   getAuthUrl(state: string): string {
     const params = new URLSearchParams({
       client_id: this.clientId,

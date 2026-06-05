@@ -4,11 +4,14 @@ import {
   ClipPayload,
 } from './BaseOAuthProvider'
 import { sanitizeFilename } from '../utils'
+import { getSiteUrl } from '../site'
 
 export class OneDriveProvider implements BaseOAuthProvider {
   private clientId = process.env.ONEDRIVE_CLIENT_ID || ''
   private clientSecret = process.env.ONEDRIVE_CLIENT_SECRET || ''
-  private redirectUri = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/providers/callback/onedrive`
+  private get redirectUri(): string {
+    return `${getSiteUrl()}/api/providers/callback/onedrive`
+  }
 
   getAuthUrl(state: string): string {
     const params = new URLSearchParams({
@@ -100,7 +103,7 @@ created_at: "${new Date().toISOString()}"
 ---
 
 ${payload.content}`
- 
+
     const uploadToPath = async (onedrivePath: string): Promise<string> => {
       const url = `https://graph.microsoft.com/v1.0/me${onedrivePath}`
       const res = await fetch(url, {
@@ -113,33 +116,36 @@ ${payload.content}`
       })
 
       if (!res.ok) {
-        throw new Error(`OneDrive upload failed to ${onedrivePath}: ${await res.text()}`)
+        throw new Error(
+          `OneDrive upload failed to ${onedrivePath}: ${await res.text()}`,
+        )
       }
       const data = await res.json()
       return data.id
     }
- 
+
     const omnivyPath = `/drive/root:/Omnivy Web Clips/${filename}:/content`
- 
+
     if (payload.folderId) {
-      try { 
+      try {
         const folderRes = await fetch(
           `https://graph.microsoft.com/v1.0/me/drive/items/${payload.folderId}`,
           {
             headers: { Authorization: `Bearer ${accessToken}` },
-          }
+          },
         )
 
         if (folderRes.ok) {
           const folderData = await folderRes.json()
-          let parentPath = ""
-          
-          if (folderData.parentReference?.path) { 
-            const parts = folderData.parentReference.path.split(":/")
+          let parentPath = ''
+
+          if (folderData.parentReference?.path) {
+            const parts = folderData.parentReference.path.split(':/')
             if (parts.length > 1) {
               parentPath = parts[1]
             } else {
-              const driveRootParts = folderData.parentReference.path.split("/drive/root:")
+              const driveRootParts =
+                folderData.parentReference.path.split('/drive/root:')
               if (driveRootParts.length > 1) {
                 parentPath = driveRootParts[1]
               }
@@ -151,18 +157,25 @@ ${payload.content}`
             : folderData.name
 
           const targetPath = `/drive/root:/${targetFolderPath}/${filename}:/content`
-          console.log(`[OneDrive] Attempting upload to resolved path: ${targetPath}`)
-          
+          console.log(
+            `[OneDrive] Attempting upload to resolved path: ${targetPath}`,
+          )
+
           const remoteId = await uploadToPath(targetPath)
           return { success: true, remoteId }
         } else {
-          console.warn(`[OneDrive] Failed to resolve folder ID ${payload.folderId}, status: ${folderRes.status}. Falling back to /Omnivy Web Clips.`)
+          console.warn(
+            `[OneDrive] Failed to resolve folder ID ${payload.folderId}, status: ${folderRes.status}. Falling back to /Omnivy Web Clips.`,
+          )
         }
       } catch (err) {
-        console.warn(`[OneDrive] Error resolving folder ${payload.folderId}. Falling back to /Omnivy Web Clips.`, err)
+        console.warn(
+          `[OneDrive] Error resolving folder ${payload.folderId}. Falling back to /Omnivy Web Clips.`,
+          err,
+        )
       }
     }
- 
+
     console.log(`[OneDrive] Uploading to fallback path: ${omnivyPath}`)
     const remoteId = await uploadToPath(omnivyPath)
     return { success: true, remoteId }
