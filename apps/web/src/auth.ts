@@ -57,6 +57,8 @@ const CustomPrismaAdapter: Adapter = {
       },
     })
   },
+   /* 
+   Commented code for checking the next-auth error in Oauth flow.
   async createSession(session) {
     return db.userSession.create({
       data: {
@@ -94,7 +96,7 @@ const CustomPrismaAdapter: Adapter = {
     await db.userSession.deleteMany({
       where: { sessionToken },
     })
-  },
+  },*/
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
