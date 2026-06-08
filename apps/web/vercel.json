@@ -1,11 +1,18 @@
 {
   "crons": [
     {
-      "path": "\/api\/jobs\/refresh-chrome-extension-stats",
+      "path": "/api/jobs/refresh-chrome-extension-stats",
       "schedule": "0 0 * * *"
     }
   ],
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+  "headers": [
+    {
+      "source": "/api/auth/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" },
+        { "key": "CDN-Cache-Control", "value": "no-store" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "no-store" }
+      ]
+    }
   ]
 }
