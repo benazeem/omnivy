@@ -6,10 +6,10 @@ import CloudConnector from './CloudConnector'
 import CloudServiceCard from './CloudServiceCard'
 import type { CloudService } from './CloudServiceCard'
 import { API_BASE_URL } from '@/config/api'
-import { setDropboxConnected } from '@/features/dropboxSlice'
-import { setGoogleDriveConnected } from '@/features/googleDriveSlice'
-import { setNotionConnected } from '@/features/notionSlice'
-import { setOneDriveConnected } from '@/features/oneDriveSlice'
+import { setDropboxConnected, setDropboxUserInfo } from '@/features/dropboxSlice'
+import { setGoogleDriveConnected, setGoogleDriveUserInfo } from '@/features/googleDriveSlice'
+import { setNotionConnected, setNotionUserInfo } from '@/features/notionSlice'
+import { setOneDriveConnected, setOneDriveUserInfo } from '@/features/oneDriveSlice'
 import { useCloudAutoRefresh } from '@/hooks/useCloudAutoRefresh'
 import { usePrefersDarkMode } from '@/hooks/usePrefersDarkMode'
 import handleCloudFileRefresh from '@/services/handlers/fileRefreshHandlers'
@@ -22,6 +22,10 @@ const CONNECTION_STORAGE_KEYS = [
   'oneDriveConnection',
   'dropboxConnection',
   'notionConnection',
+  'googleDriveUserInfo',
+  'oneDriveUserInfo',
+  'dropboxUserInfo',
+  'notionUserInfo',
 ]
 
 function CloudManager() {
@@ -48,6 +52,10 @@ function CloudManager() {
         dispatch(setOneDriveConnected(!!result.oneDriveConnection))
         dispatch(setDropboxConnected(!!result.dropboxConnection))
         dispatch(setNotionConnected(!!result.notionConnection))
+        dispatch(setGoogleDriveUserInfo(result.googleDriveUserInfo || null))
+        dispatch(setOneDriveUserInfo(result.oneDriveUserInfo || null))
+        dispatch(setDropboxUserInfo(result.dropboxUserInfo || null))
+        dispatch(setNotionUserInfo(result.notionUserInfo || null))
       })
     }
 
@@ -238,15 +246,15 @@ function CloudManager() {
   return (
     <div className="space-y-4" aria-label="Cloud Management">
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-[var(--text-muted)]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
+          <p className="max-w-xl text-sm sm:text-xs text-[var(--text-muted)] leading-relaxed">
             Connect third-party workspaces. Click a service to sync folders
             locally.
           </p>
           <Button
             size="sm"
             onClick={handleManage}
-            className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold py-1"
+            className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold py-2 sm:py-1"
           >
             Manage Cloud
           </Button>

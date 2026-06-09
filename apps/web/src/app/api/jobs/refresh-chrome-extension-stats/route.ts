@@ -6,7 +6,11 @@ export const runtime = 'nodejs'
 export async function GET() {
   try {
     const stats = await refreshChromeExtensionStats()
-    return NextResponse.json({ success: true, data: stats })
+
+    return NextResponse.json({
+      success: true,
+      data: stats,
+    })
   } catch (error) {
     const message =
       error instanceof Error

@@ -6,6 +6,7 @@ import {
   Palette,
   Cpu,
   Clipboard,
+  Menu,
 } from 'lucide-react'
 import type { AppDispatch, RootState } from '@/store'
 import {
@@ -26,6 +27,8 @@ import ConnectionsTab from '../components/settings/ConnectionsTab'
 
 function Settings() {
   const [activeTab, setActiveTab] = useState('general')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [currentNameInput, setCurrentNameInput] = useState<string>('')
   const dispatch = useDispatch<AppDispatch>()
 
@@ -77,19 +80,48 @@ function Settings() {
 
   return (
     <div
-      className={`flex min-h-screen w-full bg-[var(--bg-popover)] text-[var(--text-main)] font-sans overflow-hidden`}
+      className="flex min-h-screen w-full bg-[var(--bg-popover)] text-[var(--text-main)] font-sans lg:overflow-hidden"
     >
       <SettingsNotification />
+
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close settings menu"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       <SettingsSidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         menuItems={menuItems} 
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed((collapsed) => !collapsed)}
       />
 
-      {/* Fluid Content Area */}
-      <main className="flex-grow p-10 lg:p-16 h-screen overflow-y-auto w-full">
-        <div className="w-full space-y-12 animate-in fade-in slide-in-from-right-8 duration-500">
+      <main className="w-full flex-1 overflow-y-auto px-4 pb-6 pt-20 sm:px-6 lg:h-screen lg:px-6 lg:py-7 xl:px-8 2xl:px-10">
+        <div className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between border-b border-[var(--border-dim)] bg-[var(--bg-popover)]/95 px-4 py-3 backdrop-blur-lg lg:hidden">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/60 p-2.5 text-[var(--text-main)] shadow-sm"
+            title="Open settings menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 text-right">
+            <p className="text-sm font-black uppercase tracking-wider">Omnivy</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+              Settings
+            </p>
+          </div>
+        </div>
+
+        <div className="mx-auto w-full max-w-6xl space-y-8 lg:space-y-10 animate-in fade-in slide-in-from-right-8 duration-500">
           {activeTab === 'general' && (
             <GeneralTab behavior={behavior} dispatch={dispatch} />
           )}

@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
 import { getChromeExtensionStats } from '@/lib/chromeWebStore'
-import { UserReviewsSection } from './components/UserReviewsSection'
 import { InstallHero } from './components/InstallHero'
 import { InstallPreview } from './components/InstallPreview'
 
@@ -26,14 +25,6 @@ export default async function InstallPage() {
       <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 lg:gap-8 items-center">
         <InstallHero chromeStats={chromeStats} />
         <InstallPreview />
-      </div>
- 
-      <div className="max-w-6xl mx-auto px-4 md:px-8 mt-8">
-        <UserReviewsSection
-          totalReviews={chromeStats.reviews}
-          averageRating={chromeStats.rating}
-          reviewsUrl={chromeStats.reviewsUrl}
-        />
       </div>
     </div>
   )

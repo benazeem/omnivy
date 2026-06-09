@@ -1,21 +1,25 @@
 import axios from 'axios'
 import { Prisma } from '@prisma/client'
 import * as cheerio from 'cheerio'
+import { createHash } from 'crypto'
 import { db } from './database'
 import {
   ChromeExtensionReview,
+  ChromeExtensionReviewRow,
   ChromeExtensionReviewsResult,
   ChromeExtensionStats,
   ChromeExtensionStatsRow,
 } from '@/types/webStore'
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
+const REVIEWS_CACHE_TTL_MS = 12 * 60 * 60 * 1000
 const DEFAULT_EXTENSION_ID =
   process.env.CHROME_WEB_STORE_EXTENSION_ID?.trim() ||
   'nbeeifpffimepiobjmhpfihileadikdo'
 const DEFAULT_EXTENSION_SLUG: string =
   process.env.CHROME_EXTENSION_SLUG?.trim() || 'obsidian-plus-web-clipper'
 const TABLE_NAME = 'chrome_extension_stats'
+const REVIEWS_TABLE_NAME = 'chrome_extension_reviews'
 
 const FALLBACK_REVIEWS_BY_EXTENSION_ID: Record<
   string,
@@ -74,6 +78,35 @@ async function ensureStatsTable() {
   await db.$executeRawUnsafe(`
     CREATE INDEX IF NOT EXISTS chrome_extension_stats_fetched_at_idx
     ON ${TABLE_NAME} (fetched_at DESC)
+  `)
+}
+
+async function ensureReviewsTable() {
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS ${REVIEWS_TABLE_NAME} (
+      extension_id TEXT NOT NULL,
+      review_id TEXT NOT NULL,
+      rating INTEGER NOT NULL DEFAULT 0,
+      comment TEXT NOT NULL,
+      author TEXT NOT NULL,
+      helpful_text TEXT NULL,
+      review_updated_at TEXT NULL,
+      source TEXT NOT NULL DEFAULT 'chrome-web-store',
+      source_url TEXT NOT NULL,
+      fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (extension_id, review_id)
+    )
+  `)
+
+  await db.$executeRawUnsafe(`
+    ALTER TABLE ${REVIEWS_TABLE_NAME}
+    ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'chrome-web-store'
+  `)
+
+  await db.$executeRawUnsafe(`
+    CREATE INDEX IF NOT EXISTS chrome_extension_reviews_fetched_at_idx
+    ON ${REVIEWS_TABLE_NAME} (extension_id, fetched_at DESC)
   `)
 }
 
@@ -175,6 +208,20 @@ function parseRating(value: string | undefined) {
 
 function cleanReviewText(value: string) {
   return value.replace(/\s+/g, ' ').trim()
+}
+
+function getStableReviewId(review: ChromeExtensionReview) {
+  return createHash('sha256')
+    .update(
+      [
+        review.author,
+        review.rating,
+        review.comment,
+        review.updatedAt || '',
+      ].join('|'),
+    )
+    .digest('hex')
+    .slice(0, 24)
 }
 
 function looksLikeChromeUiText(value: string) {
@@ -287,6 +334,79 @@ async function writeCachedStats(stats: ChromeExtensionStats) {
   `)
 }
 
+function mapReviewRow(row: ChromeExtensionReviewRow): ChromeExtensionReview {
+  return {
+    id: row.review_id,
+    rating: row.rating,
+    comment: row.comment,
+    author: row.author,
+    updatedAt: row.review_updated_at || undefined,
+    helpfulText: row.helpful_text || undefined,
+  }
+}
+
+async function readCachedReviews(extensionId: string) {
+  await ensureReviewsTable()
+  const rows = (await db.$queryRaw(
+    Prisma.sql`
+    SELECT extension_id, review_id, rating, comment, author, helpful_text, review_updated_at, source, source_url, fetched_at
+    FROM ${Prisma.raw(REVIEWS_TABLE_NAME)}
+    WHERE extension_id = ${extensionId}
+    ORDER BY fetched_at DESC, updated_at DESC
+    LIMIT 6
+  `,
+  )) as ChromeExtensionReviewRow[]
+
+  if (rows.length === 0) return null
+
+  return {
+    reviews: rows.map(mapReviewRow),
+    fetchedAt: rows[0].fetched_at.toISOString(),
+    source: rows[0].source,
+  }
+}
+
+async function writeCachedReviews(
+  extensionId: string,
+  reviewsUrl: string,
+  reviews: ChromeExtensionReview[],
+  source: ChromeExtensionReviewsResult['source'],
+) {
+  await ensureReviewsTable()
+  const fetchedAt = new Date()
+
+  for (const review of reviews) {
+    const reviewId = getStableReviewId(review)
+    await db.$executeRaw(Prisma.sql`
+      INSERT INTO ${Prisma.raw(REVIEWS_TABLE_NAME)} (
+        extension_id, review_id, rating, comment, author, helpful_text, review_updated_at, source, source_url, fetched_at, updated_at
+      ) VALUES (
+        ${extensionId},
+        ${reviewId},
+        ${review.rating},
+        ${review.comment},
+        ${review.author},
+        ${review.helpfulText || null},
+        ${review.updatedAt || null},
+        ${source},
+        ${reviewsUrl},
+        ${fetchedAt},
+        NOW()
+      )
+      ON CONFLICT (extension_id, review_id) DO UPDATE SET
+        rating = EXCLUDED.rating,
+        comment = EXCLUDED.comment,
+        author = EXCLUDED.author,
+        helpful_text = EXCLUDED.helpful_text,
+        review_updated_at = EXCLUDED.review_updated_at,
+        source = EXCLUDED.source,
+        source_url = EXCLUDED.source_url,
+        fetched_at = EXCLUDED.fetched_at,
+        updated_at = NOW()
+    `)
+  }
+}
+
 export async function getChromeExtensionStats(
   extensionId = getDefaultChromeWebStoreExtensionId(),
   forceRefresh = false,
@@ -320,14 +440,7 @@ export async function refreshChromeExtensionStats(
   return getChromeExtensionStats(extensionId, true)
 }
 
-export async function getChromeExtensionReviews(
-  extensionId = getDefaultChromeWebStoreExtensionId(),
-): Promise<ChromeExtensionReview[]> {
-  const result = await getChromeExtensionReviewsResult(extensionId)
-  return result.reviews
-}
-
-export async function getChromeExtensionReviewsResult(
+async function scrapeChromeExtensionReviews(
   extensionId = getDefaultChromeWebStoreExtensionId(),
 ): Promise<ChromeExtensionReviewsResult> {
   const fallbackReviews = FALLBACK_REVIEWS_BY_EXTENSION_ID[extensionId] || []
@@ -352,4 +465,52 @@ export async function getChromeExtensionReviewsResult(
   } catch {
     return { reviews: fallbackReviews, source: 'fallback', reviewsUrl }
   }
+}
+
+export async function refreshChromeExtensionReviews(
+  extensionId = getDefaultChromeWebStoreExtensionId(),
+) {
+  const result = await scrapeChromeExtensionReviews(extensionId)
+
+  if (result.reviews.length > 0) {
+    await writeCachedReviews(
+      extensionId,
+      result.reviewsUrl,
+      result.reviews,
+      result.source,
+    )
+  }
+
+  return result
+}
+
+export async function getChromeExtensionReviews(
+  extensionId = getDefaultChromeWebStoreExtensionId(),
+): Promise<ChromeExtensionReview[]> {
+  const result = await getChromeExtensionReviewsResult(extensionId)
+  return result.reviews
+}
+
+export async function getChromeExtensionReviewsResult(
+  extensionId = getDefaultChromeWebStoreExtensionId(),
+): Promise<ChromeExtensionReviewsResult> {
+  const fallbackReviews = FALLBACK_REVIEWS_BY_EXTENSION_ID[extensionId] || []
+  const reviewsUrl = getChromeWebStoreReviewsUrl(extensionId)
+  const cached = await readCachedReviews(extensionId)
+  const isFresh =
+    cached &&
+    Date.now() - new Date(cached.fetchedAt).getTime() < REVIEWS_CACHE_TTL_MS
+
+  if (isFresh && cached) {
+    return { reviews: cached.reviews, source: cached.source, reviewsUrl }
+  }
+
+  const scraped = await refreshChromeExtensionReviews(extensionId)
+  if (scraped.source === 'chrome-web-store') return scraped
+
+  if (cached) {
+    return { reviews: cached.reviews, source: cached.source, reviewsUrl }
+  }
+
+  return { reviews: fallbackReviews, source: 'fallback', reviewsUrl }
 }

@@ -37,3 +37,16 @@ export type ChromeExtensionStatsRow = {
   source_url: string
   fetched_at: Date
 }
+
+export type ChromeExtensionReviewRow = {
+  extension_id: string
+  review_id: string
+  rating: number
+  comment: string
+  author: string
+  helpful_text: string | null
+  review_updated_at: string | null
+  source: 'chrome-web-store' | 'fallback'
+  source_url: string
+  fetched_at: Date
+}

@@ -65,13 +65,13 @@ const ConnectionsTab = ({
     googleDriveConnected || oneDriveConnected || dropboxConnected || notionConnected || storedNotionConnected
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-right-8 duration-500">
+    <div className="space-y-6 lg:space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-5xl font-display font-black mb-3 tracking-tighter">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-black mb-2 sm:mb-3 tracking-tight">
             Connections
           </h2>
-          <p className="text-[var(--text-muted)] text-xl">
+          <p className="text-[var(--text-muted)] text-base sm:text-lg lg:text-xl">
             Manage your vaults and cloud sync providers.
           </p>
         </div>
@@ -117,18 +117,18 @@ const ConnectionsTab = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 items-start">
-        <div className="space-y-10">
-          <section className="glass-panel p-10 space-y-8">
-            <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-4 text-2xl font-black font-display tracking-tight uppercase">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)] gap-6 lg:gap-8 items-start">
+        <div className="space-y-6 lg:space-y-8">
+          <section className="glass-panel p-5 sm:p-6 lg:p-7 xl:p-8 space-y-6 lg:space-y-8">
+            <div className="flex items-center justify-between gap-4">
+              <h3 className="flex items-center gap-3 sm:gap-4 text-xl sm:text-2xl font-black font-display tracking-tight uppercase">
                 <div className="p-2.5 bg-purple-500/10 rounded-2xl">
                   <Vault className="w-6 h-6 text-purple-600" />
                 </div>
                 Obsidian Vaults
               </h3>
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Input
                 value={currentNameInput}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentNameInput(e.target.value)}
@@ -139,13 +139,13 @@ const ConnectionsTab = ({
                   }
                 }}
                 placeholder="Enter vault name..."
-                className="flex-grow py-4"
+                className="min-w-0 flex-grow py-3 sm:py-4"
               />
-              <Button onClick={handleVaultAdd} className="btn-primary px-10">
+              <Button onClick={handleVaultAdd} className="btn-primary px-8 sm:px-10">
                 Add
               </Button>
             </div>
-            <div className="flex flex-wrap gap-3 pt-8 border-t border-[var(--border-dim)]">
+            <div className="flex flex-wrap gap-3 pt-6 lg:pt-8 border-t border-[var(--border-dim)]">
               {vaultNames.length === 0 ? (
                 <span className="text-sm text-[var(--text-muted)] font-medium">No vaults configured yet. Add one above!</span>
               ) : (
@@ -171,10 +171,10 @@ const ConnectionsTab = ({
           </section>
         </div>
 
-        <div className="space-y-10">
-          <section className="glass-panel p-10 space-y-10">
-            <div className="flex items-center justify-between border-b border-[var(--border-dim)] pb-6">
-              <h3 className="flex items-center gap-4 text-2xl font-black font-display tracking-tight uppercase">
+        <div className="space-y-6 lg:space-y-8">
+          <section className="glass-panel p-5 sm:p-6 lg:p-7 xl:p-8 space-y-7 lg:space-y-8">
+            <div className="flex items-center justify-between gap-4 border-b border-[var(--border-dim)] pb-5 lg:pb-6">
+              <h3 className="flex items-center gap-3 sm:gap-4 text-xl sm:text-2xl font-black font-display tracking-tight uppercase">
                 <div className="p-2.5 bg-blue-500/10 rounded-2xl">
                   <Cloud className="w-6 h-6 text-blue-500" />
                 </div>
@@ -186,7 +186,7 @@ const ConnectionsTab = ({
               <CloudManager />
             </div>
 
-            <div className="space-y-6 pt-8 border-t border-[var(--border-dim)]">
+            <div className="space-y-5 lg:space-y-6 pt-6 lg:pt-8 border-t border-[var(--border-dim)]">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-amber-500/10 rounded-xl flex items-center justify-center">
                   <Database className="w-5 h-5 text-amber-600" />
@@ -201,7 +201,7 @@ const ConnectionsTab = ({
                   <p className="text-xs text-[var(--text-muted)]">Platforms we are currently planning to support.</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-3">
                 {['Evernote', 'Readwise', 'Zotero', 'Raindrop.io', 'Todoist'].map((service) => (
                   <div key={service} className="flex items-center justify-between p-3.5 rounded-2xl bg-[var(--bg-muted)] border border-[var(--border-dim)] opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-not-allowed">
                     <span className="font-bold text-xs">{service}</span>
