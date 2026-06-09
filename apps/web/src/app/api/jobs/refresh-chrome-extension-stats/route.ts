@@ -1,12 +1,25 @@
 import { NextResponse } from 'next/server'
-import { refreshChromeExtensionStats } from '@/lib/chromeWebStore'
+import {
+  refreshChromeExtensionReviews,
+  refreshChromeExtensionStats,
+} from '@/lib/chromeWebStore'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
   try {
-    const stats = await refreshChromeExtensionStats()
-    return NextResponse.json({ success: true, data: stats })
+    const [stats, reviews] = await Promise.all([
+      refreshChromeExtensionStats(),
+      refreshChromeExtensionReviews(),
+    ])
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        stats,
+        reviews,
+      },
+    })
   } catch (error) {
     const message =
       error instanceof Error

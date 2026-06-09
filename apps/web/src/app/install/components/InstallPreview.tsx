@@ -15,7 +15,13 @@ export function InstallPreview() {
           {/* Header */}
           <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded bg-brand-500" />
+              <div className="w-6 h-6 rounded bg-brand-500 flex items-center justify-center overflow-hidden">
+                <img
+                  src="/icon.ico"
+                  alt=""
+                  className="w-4 h-4 object-contain invert"
+                />
+              </div>
               <span className="font-bold text-sm">Omnivy</span>
             </div>
           </div>

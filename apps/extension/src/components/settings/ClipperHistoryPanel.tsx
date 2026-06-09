@@ -42,14 +42,14 @@ export default function ClipperHistoryPanel({ authenticated }: ClipperHistoryPan
   if (!authenticated) return null
 
   return (
-    <section className="glass-panel p-8 space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <section className="glass-panel p-5 sm:p-6 lg:p-8 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2.5 bg-brand-500/10 rounded-xl">
               <Clock3 className="w-5 h-5 text-brand-600" />
             </div>
-            <h3 className="text-2xl font-black font-display tracking-tight uppercase">
+            <h3 className="text-xl sm:text-2xl font-black font-display tracking-tight uppercase">
               Clipper History
             </h3>
           </div>
@@ -61,7 +61,7 @@ export default function ClipperHistoryPanel({ authenticated }: ClipperHistoryPan
           type="button"
           variant="outline"
           onClick={() => setRefreshTick((current) => current + 1)}
-          className="rounded-xl border-[var(--border-dim)] text-xs font-bold"
+          className="w-full sm:w-auto rounded-xl border-[var(--border-dim)] text-xs font-bold"
         >
           <RefreshCcw size={14} className={loading ? 'animate-spin' : ''} />
           Refresh
@@ -88,7 +88,7 @@ export default function ClipperHistoryPanel({ authenticated }: ClipperHistoryPan
               key={clip.id}
               className="p-4 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-main)]/80 shadow-sm"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Search className="w-4 h-4 text-[var(--text-muted)]" />
@@ -110,7 +110,7 @@ export default function ClipperHistoryPanel({ authenticated }: ClipperHistoryPan
                     ))}
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="flex shrink-0 flex-row items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-start">
                   <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
                     {new Date(clip.createdAt).toLocaleDateString()}
                   </span>
@@ -132,7 +132,7 @@ export default function ClipperHistoryPanel({ authenticated }: ClipperHistoryPan
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-3 pt-2">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 pt-2">
         <Button
           type="button"
           variant="outline"
@@ -142,7 +142,7 @@ export default function ClipperHistoryPanel({ authenticated }: ClipperHistoryPan
         >
           Previous
         </Button>
-        <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+        <span className="text-center text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
           Page {page}
         </span>
         <Button

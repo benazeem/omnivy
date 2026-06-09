@@ -19,6 +19,8 @@ import {
   Layers,
   BookOpen,
   AlertCircle,
+  User,
+  Mail,
 } from 'lucide-react'
 import { Input, Button } from '@omnivy/ui'
 
@@ -27,6 +29,17 @@ interface ProviderConnection {
   status: string
   scopes: string[]
   updatedAt: string
+}
+
+interface ProviderUserInfo {
+  id?: string
+  account_id?: string
+  name?: string
+  displayName?: string
+  email?: string
+  mail?: string
+  picture?: string | null
+  profile_photo_url?: string | null
 }
 
 const PROVIDER_CONFIG: Record<
@@ -89,6 +102,7 @@ const UPCOMING_PROVIDERS = [
 
 export default function IntegrationsSettingsPage() {
   const [connections, setConnections] = useState<ProviderConnection[]>([])
+  const [providerUserInfo, setProviderUserInfo] = useState<Record<string, ProviderUserInfo>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionInProgress, setActionInProgress] = useState<string | null>(null)
@@ -206,7 +220,28 @@ export default function IntegrationsSettingsPage() {
       const res = await fetch('/api/providers/status')
       if (!res.ok) throw new Error('Failed to fetch connections')
       const data = await res.json()
-      setConnections(data.connections || [])
+      const nextConnections = data.connections || []
+      setConnections(nextConnections)
+
+      const activeProviders = nextConnections
+        .filter((connection: ProviderConnection) => connection.status === 'active')
+        .map((connection: ProviderConnection) => connection.provider)
+
+      const userInfoEntries = await Promise.all(
+        activeProviders.map(async (provider: string) => {
+          try {
+            const infoRes = await fetch(`/api/providers/userinfo?provider=${provider}`)
+            if (!infoRes.ok) return null
+            return [provider, await infoRes.json()] as const
+          } catch {
+            return null
+          }
+        }),
+      )
+
+      setProviderUserInfo(
+        Object.fromEntries(userInfoEntries.filter(Boolean) as Array<readonly [string, ProviderUserInfo]>),
+      )
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -288,6 +323,30 @@ export default function IntegrationsSettingsPage() {
   const getConnectionInfo = (provider: string) => {
     return connections.find((c) => c.provider === provider)
   }
+
+  const getUserInfo = (provider: string) => {
+    return providerUserInfo[provider]
+  }
+
+  const getUserName = (info?: ProviderUserInfo) => {
+    return info?.displayName || info?.name || info?.email || info?.mail || ''
+  }
+
+  const getUserEmail = (info?: ProviderUserInfo) => {
+    return info?.email || info?.mail || ''
+  }
+
+  const getUserAvatar = (info?: ProviderUserInfo) => {
+    return info?.picture || info?.profile_photo_url || null
+  }
+
+  const getInitials = (value: string) =>
+    value
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || 'U'
 
   const cancelConnection = () => {
     if (pollRef.current) clearInterval(pollRef.current)
@@ -525,6 +584,10 @@ export default function IntegrationsSettingsPage() {
               ([key, config], index) => {
                 const connected = isConnected(key)
                 const connectionInfo = getConnectionInfo(key)
+                const userInfo = getUserInfo(key)
+                const userName = getUserName(userInfo)
+                const userEmail = getUserEmail(userInfo)
+                const userAvatar = getUserAvatar(userInfo)
                 const loading = actionInProgress === key
 
                 return (
@@ -564,7 +627,34 @@ export default function IntegrationsSettingsPage() {
                     </div>
  
                     {connected && connectionInfo && (
-                      <div className="mb-4 p-3 rounded-xl bg-white/5 border border-white/5 text-xs space-y-1">
+                      <div className="mb-4 p-3 rounded-xl bg-white/5 border border-white/5 text-xs space-y-3">
+                        <div className="flex min-w-0 items-center gap-3 rounded-xl bg-white/5 border border-white/5 p-3">
+                          {userAvatar ? (
+                            <img
+                              src={userAvatar}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded-full object-cover border border-white/10"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 shrink-0 rounded-full bg-brand-500/15 text-brand-500 flex items-center justify-center text-xs font-black">
+                              {getInitials(userName)}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="flex items-center gap-1.5 truncate text-xs font-black text-[var(--text-primary)]">
+                              <User className="w-3.5 h-3.5 shrink-0 text-secondary" />
+                              <span className="truncate">
+                                {userName || 'Connected account'}
+                              </span>
+                            </p>
+                            {userEmail && (
+                              <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-secondary">
+                                <Mail className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">{userEmail}</span>
+                              </p>
+                            )}
+                          </div>
+                        </div>
                         <div className="flex items-center justify-between">
                           <span className="text-secondary">Status</span>
                           <span className="text-emerald-500 font-bold flex items-center gap-1">

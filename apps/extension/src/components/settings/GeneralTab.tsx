@@ -80,32 +80,32 @@ const GeneralTab = ({ behavior, dispatch }: GeneralTabProps) => {
   }
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-right-8 duration-500">
-      <header className="flex items-end justify-between">
+    <div className="space-y-8 lg:space-y-10 animate-in fade-in slide-in-from-right-8 duration-500">
+      <header className="flex flex-col gap-3">
         <div>
-          <h2 className="text-5xl font-display font-black mb-3 tracking-tighter">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-black mb-2 sm:mb-3 tracking-tight">
             General Settings
           </h2>
-          <p className="text-[var(--text-muted)] text-xl">
+          <p className="max-w-3xl text-[var(--text-muted)] text-base sm:text-lg lg:text-xl">
             Configure how the extension captures and manages your content.
           </p>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-10"> 
-        <section className="glass-panel p-10 space-y-8">
-          <div className="flex items-center gap-3">
+      <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6 lg:gap-8"> 
+        <section className="glass-panel p-5 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="p-2.5 bg-blue-500/10 rounded-2xl">
               <Zap className="w-6 h-6 text-blue-500" />
             </div>
-            <h3 className="text-2xl font-black font-display tracking-tight uppercase">
+            <h3 className="text-xl sm:text-2xl font-black font-display tracking-tight uppercase">
               Clip Behavior
             </h3>
           </div>
-          <div className="space-y-6"> 
-            <div className="p-6 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
+          <div className="space-y-4 sm:space-y-5"> 
+            <div className="p-4 sm:p-5 lg:p-6 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/30 space-y-4">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className="min-w-0 space-y-1">
                   <div className="flex items-center gap-2">
                     <p className="font-black text-sm uppercase tracking-tight">
                       Clip Mode
@@ -129,13 +129,13 @@ const GeneralTab = ({ behavior, dispatch }: GeneralTabProps) => {
                       }),
                     )
                   }
-                  className="bg-[var(--bg-popover)] border border-[var(--border-dim)] rounded-2xl px-5 py-3 text-sm font-bold opacity-50 cursor-not-allowed"
+                  className="w-full xl:w-56 bg-[var(--bg-popover)] border border-[var(--border-dim)] rounded-2xl px-4 py-3 text-sm font-bold opacity-50 cursor-not-allowed"
                 >
                   <option value="popup">Show Popup</option>
                   <option value="background">Save Silently</option>
                 </select>
               </div>
-              <p className="text-[10px] text-[var(--text-muted)] bg-brand-500/5 rounded-xl px-4 py-2 border border-brand-500/10">
+              <p className="text-xs text-[var(--text-muted)] bg-brand-500/5 rounded-xl px-4 py-3 border border-brand-500/10 leading-relaxed">
                 {behavior.saveBehavior === 'popup'
                   ? '📋 A popup will appear letting you edit title, tags, and destination before saving.'
                   : '⚡ Content is instantly saved to your default vault with auto-generated metadata.'}
@@ -143,8 +143,8 @@ const GeneralTab = ({ behavior, dispatch }: GeneralTabProps) => {
             </div>
 
  
-            <div className="flex items-center justify-between p-6 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/30">
-              <div className="space-y-1">
+            <div className="flex items-start justify-between gap-4 p-4 sm:p-5 lg:p-6 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/30">
+              <div className="min-w-0 space-y-1">
                 <p className="font-black text-sm uppercase tracking-tight">
                   Save Images
                 </p>
@@ -153,7 +153,7 @@ const GeneralTab = ({ behavior, dispatch }: GeneralTabProps) => {
                 </p>
               </div>
 
-              <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
                 <Input
                   id="toggle-save-images"
                   type="checkbox"
@@ -167,8 +167,8 @@ const GeneralTab = ({ behavior, dispatch }: GeneralTabProps) => {
               </label>
             </div>
 
-            <div className="flex items-center justify-between p-6 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/30">
-              <div className="space-y-1">
+            <div className="flex items-start justify-between gap-4 p-4 sm:p-5 lg:p-6 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/30">
+              <div className="min-w-0 space-y-1">
                 <p className="font-black text-sm uppercase tracking-tight">
                   Add Content Links
                 </p>
@@ -177,7 +177,7 @@ const GeneralTab = ({ behavior, dispatch }: GeneralTabProps) => {
                 </p>
               </div>
 
-              <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-4">
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
                 <Input
                   id="toggle-add-links"
                   type="checkbox"
@@ -193,19 +193,19 @@ const GeneralTab = ({ behavior, dispatch }: GeneralTabProps) => {
           </div>
         </section>
  
-        <section className="glass-panel p-10 space-y-8">
-          <div className="flex items-center gap-3">
+        <section className="glass-panel p-5 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="p-2.5 bg-emerald-500/10 rounded-2xl">
               <Settings className="w-6 h-6 text-emerald-500" />
             </div>
-            <h3 className="text-2xl font-black font-display tracking-tight uppercase">
+            <h3 className="text-xl sm:text-2xl font-black font-display tracking-tight uppercase">
               Data Management
             </h3>
           </div>
 
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-1">
       
-            <div className="p-6 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/30 space-y-4">
+            <div className="p-4 sm:p-5 lg:p-6 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/30 space-y-4">
               <div className="space-y-1">
                 <p className="font-black text-sm uppercase tracking-tight">
                   Export Settings
@@ -216,13 +216,14 @@ const GeneralTab = ({ behavior, dispatch }: GeneralTabProps) => {
               </div>
               <Button
                 onClick={handleExportSettings}
-                className="btn-primary px-6 flex items-center gap-2"
+                className="btn-primary h-auto min-h-12 w-full max-w-full flex-row items-center justify-center gap-2 px-4 text-sm leading-tight"
               >
-                <Download size={16} /> Export All Settings
+                <Download className="h-4 w-4 shrink-0" />
+                <span className="truncate">Export All Settings</span>
               </Button>
             </div> 
 
-            <div className="p-6 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/30 space-y-4">
+            <div className="p-4 sm:p-5 lg:p-6 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-muted)]/30 space-y-4">
               <div className="space-y-1">
                 <p className="font-black text-sm uppercase tracking-tight">
                   Import Settings
@@ -240,14 +241,15 @@ const GeneralTab = ({ behavior, dispatch }: GeneralTabProps) => {
               />
               <Button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-popover)] font-bold text-sm hover:border-brand-500/40 transition-all"
+                className="h-auto min-h-12 w-full max-w-full flex-row items-center justify-center gap-2 rounded-2xl border border-[var(--border-dim)] bg-[var(--bg-popover)] px-4 py-3 text-sm font-bold leading-tight hover:border-brand-500/40 transition-all"
               >
-                <Upload size={16} /> Import Settings File
+                <Upload className="h-4 w-4 shrink-0" />
+                <span className="truncate">Import Settings File</span>
               </Button>
             </div>
 
 
-            <div className="p-6 rounded-2xl border border-red-500/20 bg-red-500/5 space-y-4">
+            <div className="p-4 sm:p-5 lg:p-6 rounded-2xl border border-red-500/20 bg-red-500/5 space-y-4">
               <div className="space-y-1">
                 <p className="font-black text-sm uppercase tracking-tight text-red-500">
                   Reset to Defaults
@@ -265,9 +267,9 @@ const GeneralTab = ({ behavior, dispatch }: GeneralTabProps) => {
                     })
                   }
                 }}
-                className="px-6 py-3 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-500 font-bold text-sm hover:bg-red-500/20 transition-all"
+                className="h-auto min-h-12 w-full max-w-full rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-bold leading-tight text-red-500 hover:bg-red-500/20 transition-all"
               >
-                Reset All Settings
+                <span className="truncate">Reset All Settings</span>
               </Button>
             </div>
           </div>

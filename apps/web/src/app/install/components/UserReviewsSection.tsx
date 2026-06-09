@@ -54,14 +54,19 @@ export function UserReviewsSection({
           // probe only makes the official reviews request visible in DevTools.
         })
 
-        if (active) setReviewState(data)
-      } catch {
         if (active) {
           setReviewState({
-            reviews: [],
-            source: 'fallback',
-            reviewsUrl,
+            reviews: data.reviews || [],
+            source: data.source || 'fallback',
+            reviewsUrl: data.reviewsUrl || reviewsUrl,
           })
+        }
+      } catch {
+        if (active) {
+          setReviewState((current) => ({
+            ...current,
+            reviewsUrl: current.reviewsUrl || reviewsUrl,
+          }))
         }
       } finally {
         if (active) setIsLoading(false)
