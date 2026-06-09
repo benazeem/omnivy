@@ -1,11 +1,11 @@
-import NextAuth from "next-auth"
-import type { Adapter } from "next-auth/adapters"
-import { db } from "./lib/database"
-import { authConfig } from "./auth.config"
-import { encrypt } from "./lib/encryption"
-import { decode } from "next-auth/jwt"
-import { headers } from "next/headers"
-import { verifyAccessToken } from "./lib/extensionTokens"
+import NextAuth from 'next-auth'
+import type { Adapter } from 'next-auth/adapters'
+import { db } from './lib/database'
+import { authConfig } from './auth.config'
+import { encrypt } from './lib/encryption'
+import { decode } from 'next-auth/jwt'
+import { headers } from 'next/headers'
+import { verifyAccessToken } from './lib/extensionTokens'
 
 const CustomPrismaAdapter: Adapter = {
   async createUser(user) {
@@ -57,7 +57,7 @@ const CustomPrismaAdapter: Adapter = {
       },
     })
   },
-   /* 
+  /* 
    Commented code for checking the next-auth error in Oauth flow.
   async createSession(session) {
     return db.userSession.create({
@@ -104,7 +104,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: CustomPrismaAdapter,
   events: {
     async signOut(message) {
-      const token = "token" in message ? message.token : null
+      const token = 'token' in message ? message.token : null
       const userId = token?.id as string | undefined
       if (userId) {
         await db.user.update({
@@ -116,15 +116,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user, account }) { 
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
         token.email = user.email
         token.name = user.name
         token.picture = user.image
       }
- 
-      if (account && account.provider === "google" && user && user.id) {
+
+      if (account && account.provider === 'google' && user && user.id) {
         const accessToken = account.access_token
         const refreshToken = account.refresh_token
         const expiresAt = account.expires_at
@@ -132,32 +132,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           : null
 
         if (accessToken) {
-          try { 
+          try {
             const encAccess = encrypt(accessToken)
             let encRefresh = null
             if (refreshToken) {
               const r = encrypt(refreshToken)
               encRefresh = `${r.iv}:${r.tag}:${r.encryptedData}`
             }
- 
+
             const connection = await db.providerConnection.upsert({
               where: {
                 userId_provider: {
                   userId: user.id,
-                  provider: "gdrive",
+                  provider: 'gdrive',
                 },
               },
               update: {
-                status: "active",
-                scopes: account.scope ? account.scope.split(" ") : [],
+                status: 'active',
+                scopes: account.scope ? account.scope.split(' ') : [],
               },
               create: {
                 userId: user.id,
-                provider: "gdrive",
-                status: "active",
-                scopes: account.scope ? account.scope.split(" ") : [],
+                provider: 'gdrive',
+                status: 'active',
+                scopes: account.scope ? account.scope.split(' ') : [],
               },
-            }) 
+            })
 
             await db.encryptedToken.upsert({
               where: { connectionId: connection.id },
@@ -177,18 +177,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 expiresAt,
               },
             })
- 
+
             await db.auditLog.create({
               data: {
                 userId: user.id,
-                action: "oauth_connect",
-                details: { provider: "gdrive", autoProvisioned: true },
+                action: 'oauth_connect',
+                details: { provider: 'gdrive', autoProvisioned: true },
               },
             })
 
-            console.log(`[Google-AutoConnect] Successfully provisioned Google Drive for user: ${user.id}`)
+            console.log(
+              `[Google-AutoConnect] Successfully provisioned Google Drive for user: ${user.id}`,
+            )
           } catch (err) {
-            console.error("[Google-AutoConnect] Critical Failure:", err)
+            console.error('[Google-AutoConnect] Critical Failure:', err)
           }
         }
       }
@@ -201,10 +203,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 export async function getSessionWithFallback() {
   try {
     const headersList = await headers()
-    const authHeader = headersList.get("authorization")
-    if (authHeader && authHeader.startsWith("Bearer ")) {
+    const authHeader = headersList.get('authorization')
+    if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7)
-       
+
       const accessPayload = await verifyAccessToken(token)
       if (accessPayload?.sub) {
         const user = await db.user.findUnique({
@@ -215,23 +217,24 @@ export async function getSessionWithFallback() {
           return {
             user: {
               id: user.id,
-              email: user.email ?? "",
-              name: user.name ?? "",
+              email: user.email ?? '',
+              name: user.name ?? '',
               image: user.image ?? undefined,
             },
             expires: accessPayload.exp
               ? new Date(Number(accessPayload.exp) * 1000).toISOString()
-              : "",
+              : '',
           }
         }
       }
- 
+
       const decoded = await decode({
         token,
         secret: process.env.AUTH_SECRET!,
-        salt: process.env.NODE_ENV === "production"
-          ? "__Secure-omnivy.session-token"
-          : "omnivy.session-token"
+        salt:
+          process.env.NODE_ENV === 'production'
+            ? '__Secure-authjs.session-token'
+            : 'authjs.session-token',
       })
       if (decoded) {
         return {
@@ -239,14 +242,16 @@ export async function getSessionWithFallback() {
             id: decoded.id as string,
             email: decoded.email as string,
             name: decoded.name as string,
-            image: decoded.picture as string
+            image: decoded.picture as string,
           },
-          expires: decoded.exp ? new Date(Number(decoded.exp) * 1000).toISOString() : ""
+          expires: decoded.exp
+            ? new Date(Number(decoded.exp) * 1000).toISOString()
+            : '',
         }
       }
     }
   } catch (error) {
-    console.error("[Auth Fallback] Decryption error:", error)
+    console.error('[Auth Fallback] Decryption error:', error)
   }
 
   const session = await auth()
@@ -254,4 +259,3 @@ export async function getSessionWithFallback() {
 
   return null
 }
-

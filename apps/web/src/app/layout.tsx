@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '../context/ThemeContext'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
@@ -145,6 +146,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="flex flex-col min-h-screen bg-[var(--bg-primary)] antialiased transition-colors duration-300">
+        <Analytics />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

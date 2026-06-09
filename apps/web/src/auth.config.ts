@@ -47,19 +47,19 @@ export const authConfig = {
       return session
     },
   },
-  cookies: {
-    sessionToken: {
-      name: process.env.NODE_ENV === "production"
-        ? `__Secure-omnivy.session-token`
-        : `omnivy.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-      },
-    },
-  },
+  // cookies: {
+  //   sessionToken: {
+  //     name: process.env.NODE_ENV === "production"
+  //       ? `__Secure-omnivy.session-token`
+  //       : `omnivy.session-token`,
+  //     options: {
+  //       httpOnly: true,
+  //       sameSite: "lax",
+  //       path: "/",
+  //       secure: process.env.NODE_ENV === "production",
+  //     },
+  //   },
+  // },
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",

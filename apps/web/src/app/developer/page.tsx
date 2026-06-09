@@ -33,11 +33,11 @@ export const metadata: Metadata = {
 
 export default function DeveloperPage() {
   return (
-    <div className="min-h-screen pt-28 pb-20 px-6">
-      <div className="container mx-auto max-w-6xl space-y-16">
+    <div className="min-h-screen pt-24 sm:pt-28 pb-16 sm:pb-20 px-4 sm:px-6">
+      <div className="container mx-auto max-w-7xl space-y-12 sm:space-y-16">
         <DeveloperHero />
 
-        <div className="grid lg:grid-cols-[1fr_300px] gap-8 md:gap-12 items-start">
+        <div className="grid xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] 2xl:grid-cols-[minmax(0,1fr)_340px] gap-8 md:gap-10 xl:gap-12 items-start">
           <div className="space-y-12 min-w-0">
             <DeveloperTracks />
             <DeveloperAbout />
@@ -45,7 +45,7 @@ export default function DeveloperPage() {
             <DeveloperWhyBuilt />
           </div>
 
-          <div className="sticky top-24">
+          <div className="xl:sticky xl:top-24 min-w-0">
             <DeveloperSidebar />
           </div>
         </div>
