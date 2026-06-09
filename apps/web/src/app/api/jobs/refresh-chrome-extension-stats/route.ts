@@ -1,24 +1,15 @@
 import { NextResponse } from 'next/server'
-import {
-  refreshChromeExtensionReviews,
-  refreshChromeExtensionStats,
-} from '@/lib/chromeWebStore'
+import { refreshChromeExtensionStats } from '@/lib/chromeWebStore'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
   try {
-    const [stats, reviews] = await Promise.all([
-      refreshChromeExtensionStats(),
-      refreshChromeExtensionReviews(),
-    ])
+    const stats = await refreshChromeExtensionStats()
 
     return NextResponse.json({
       success: true,
-      data: {
-        stats,
-        reviews,
-      },
+      data: stats,
     })
   } catch (error) {
     const message =
