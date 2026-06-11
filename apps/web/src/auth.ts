@@ -2,7 +2,6 @@ import NextAuth from 'next-auth'
 import type { Adapter } from 'next-auth/adapters'
 import { db } from './lib/database'
 import { authConfig } from './auth.config'
-import { encrypt } from './lib/encryption'
 import { decode } from 'next-auth/jwt'
 import { headers } from 'next/headers'
 import { verifyAccessToken } from './lib/extensionTokens'
@@ -116,83 +115,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id
         token.email = user.email
         token.name = user.name
         token.picture = user.image
-      }
-
-      if (account && account.provider === 'google' && user && user.id) {
-        const accessToken = account.access_token
-        const refreshToken = account.refresh_token
-        const expiresAt = account.expires_at
-          ? new Date(account.expires_at * 1000)
-          : null
-
-        if (accessToken) {
-          try {
-            const encAccess = encrypt(accessToken)
-            let encRefresh = null
-            if (refreshToken) {
-              const r = encrypt(refreshToken)
-              encRefresh = `${r.iv}:${r.tag}:${r.encryptedData}`
-            }
-
-            const connection = await db.providerConnection.upsert({
-              where: {
-                userId_provider: {
-                  userId: user.id,
-                  provider: 'gdrive',
-                },
-              },
-              update: {
-                status: 'active',
-                scopes: account.scope ? account.scope.split(' ') : [],
-              },
-              create: {
-                userId: user.id,
-                provider: 'gdrive',
-                status: 'active',
-                scopes: account.scope ? account.scope.split(' ') : [],
-              },
-            })
-
-            await db.encryptedToken.upsert({
-              where: { connectionId: connection.id },
-              update: {
-                encryptedAccessToken: encAccess.encryptedData,
-                encryptedRefreshToken: encRefresh,
-                iv: encAccess.iv,
-                tag: encAccess.tag,
-                expiresAt,
-              },
-              create: {
-                connectionId: connection.id,
-                encryptedAccessToken: encAccess.encryptedData,
-                encryptedRefreshToken: encRefresh,
-                iv: encAccess.iv,
-                tag: encAccess.tag,
-                expiresAt,
-              },
-            })
-
-            await db.auditLog.create({
-              data: {
-                userId: user.id,
-                action: 'oauth_connect',
-                details: { provider: 'gdrive', autoProvisioned: true },
-              },
-            })
-
-            console.log(
-              `[Google-AutoConnect] Successfully provisioned Google Drive for user: ${user.id}`,
-            )
-          } catch (err) {
-            console.error('[Google-AutoConnect] Critical Failure:', err)
-          }
-        }
       }
 
       return token

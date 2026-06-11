@@ -1,5 +1,5 @@
 import { SUPPORTED_SITES } from './platformCatalog'
-import type { SupportedSite } from './platformTypes'
+import type { SupportedSite } from '@/types/content'
 
 export function detectSite(url: URL): SupportedSite | null {
   const host = url.hostname.replace(/^www\./, '').toLowerCase()

@@ -1,4 +1,4 @@
-import type { KnowledgeExtractionResult } from './types'
+import type { KnowledgeExtractionResult } from '@/types'
 import { fallbackTitle, normalizeWhitespace } from './utils/dom'
 
 export function extractStackOverflowContent(

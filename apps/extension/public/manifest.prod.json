@@ -13,7 +13,7 @@
     "activeTab",
     "storage",
     "scripting",
-    "tabs", 
+    "tabs",
     "contextMenus",
     "cookies"
   ],
@@ -26,9 +26,6 @@
     "type": "module"
   },
   "host_permissions": [
-    "http://localhost:3000/*",
-    "http://127.0.0.1:3000/*",
-    "*://localhost/*",
     "https://omnivy.hawebstudio.com/*"
   ],
   "content_scripts": [
