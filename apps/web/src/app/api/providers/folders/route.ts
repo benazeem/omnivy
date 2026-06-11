@@ -158,9 +158,15 @@ async function fetchGoogleDriveFolders(accessToken: string): Promise<any[]> {
     id: string
     name: string
     parents?: string[]
+    ownedByMe?: boolean
+    capabilities?: {
+      canAddChildren?: boolean
+      canEdit?: boolean
+    }
   }
 
   type DriveFolderNode = DriveFolderRecord & {
+    parentId: string | null
     path: string
     folders: DriveFolderNode[]
   }
@@ -170,17 +176,22 @@ async function fetchGoogleDriveFolders(accessToken: string): Promise<any[]> {
     let pageToken: string | undefined
 
     do {
-      const query = encodeURIComponent(
-        "mimeType='application/vnd.google-apps.folder' and trashed=false",
-      )
-      const fields = encodeURIComponent('files(id,name,parents,driveId),nextPageToken')
+      const query = [
+         "mimeType='application/vnd.google-apps.folder'",
+         'trashed=false',
+         "'me' in owners",
+      ].join(' and ')
       const url = new URL('https://www.googleapis.com/drive/v3/files')
-      url.searchParams.set('q', decodeURIComponent(query))
+      url.searchParams.set('q', query)
       url.searchParams.set('pageSize', '1000')
-      url.searchParams.set('fields', decodeURIComponent(fields))
-      url.searchParams.set('supportsAllDrives', 'true')
-      url.searchParams.set('includeItemsFromAllDrives', 'true')
-      url.searchParams.set('corpora', 'allDrives')
+       url.searchParams.set(
+        'fields',
+        'files(id,name,parents,ownedByMe,capabilities/canAddChildren,capabilities/canEdit),nextPageToken',
+      )
+       url.searchParams.set('corpora', 'user')
+       url.searchParams.set('includeItemsFromAllDrives', 'false')
+      url.searchParams.set('supportsAllDrives', 'false')
+       url.searchParams.set('spaces', 'drive')
       if (pageToken) url.searchParams.set('pageToken', pageToken)
 
       const res = await fetch(url.toString(), {
@@ -192,53 +203,17 @@ async function fetchGoogleDriveFolders(accessToken: string): Promise<any[]> {
       }
 
       const data = await res.json()
-      allFolders.push(...(data.files || []))
+      allFolders.push(
+        ...(data.files || []).filter((folder: DriveFolderRecord) => {
+           if (!folder.ownedByMe) return false
+
+           return folder.capabilities?.canAddChildren === true
+        }),
+      )
       pageToken = data.nextPageToken
     } while (pageToken)
 
     return allFolders
-  }
-
-  function buildFolderTree(records: DriveFolderRecord[]): DriveFolderNode[] {
-    const nodeMap = new Map<string, DriveFolderNode>()
-    for (const record of records) {
-      nodeMap.set(record.id, {
-        ...record,
-        path: '',
-        folders: [],
-      })
-    }
-
-    const attached = new Set<string>()
-    for (const record of records) {
-      const node = nodeMap.get(record.id)
-      if (!node) continue
-
-      const parentId = record.parents?.find((candidate) => nodeMap.has(candidate))
-      if (!parentId) continue
-
-      const parent = nodeMap.get(parentId)
-      if (!parent) continue
-
-      parent.folders.push(node)
-      attached.add(record.id)
-    }
-
-    const assignPaths = (
-      nodes: DriveFolderNode[],
-      parentPath = '',
-    ): DriveFolderNode[] =>
-      nodes.map((node) => {
-        const path = parentPath ? `${parentPath}/${node.name}` : `/${node.name}`
-        return {
-          ...node,
-          path,
-          folders: assignPaths(node.folders, path),
-        }
-      })
-
-    const roots = [...nodeMap.values()].filter((node) => !attached.has(node.id))
-    return assignPaths(roots)
   }
 
   const folders = await fetchAllFolders()
@@ -247,6 +222,7 @@ async function fetchGoogleDriveFolders(accessToken: string): Promise<any[]> {
   for (const folder of folders) {
     nodeMap.set(folder.id, {
       ...folder,
+      parentId: folder.parents?.[0] || null,
       path: '',
       folders: [],
     })
