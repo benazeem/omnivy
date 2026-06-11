@@ -1,4 +1,4 @@
-import type { SupportedSite } from './platformTypes'
+import type { SupportedSite } from '@/types/content'
 
 const blogSites: SupportedSite[] = [
   { key: 'medium', name: 'Medium', hosts: ['medium.com'], category: 'blog' },

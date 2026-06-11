@@ -1,6 +1,7 @@
 import path from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { copyFileSync, existsSync, unlinkSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, resolve } from 'path'
 import tailwindcss from '@tailwindcss/vite'
@@ -9,8 +10,29 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), tsconfigPaths()],
+function manifestPlugin(mode: string) {
+  const manifestName =
+    mode === 'development' ? 'manifest.dev.json' : 'manifest.prod.json'
+
+  return {
+    name: 'omnivy-manifest',
+    closeBundle() {
+      copyFileSync(
+        resolve(__dirname, 'public', manifestName),
+        resolve(__dirname, 'dist', 'manifest.json'),
+      )
+      for (const extraManifest of ['manifest.dev.json', 'manifest.prod.json']) {
+        const outputPath = resolve(__dirname, 'dist', extraManifest)
+        if (existsSync(outputPath)) {
+          unlinkSync(outputPath)
+        }
+      }
+    },
+  }
+}
+
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), tailwindcss(), tsconfigPaths(), manifestPlugin(mode)],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -39,4 +61,4 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
   },
-})
+}))

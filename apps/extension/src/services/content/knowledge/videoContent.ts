@@ -1,4 +1,4 @@
-import type { KnowledgeExtractionResult } from './types'
+import type { KnowledgeExtractionResult } from '@/types'
 import { normalizeWhitespace } from './utils/dom'
 
 const TRANSCRIPT_SELECTORS = [
